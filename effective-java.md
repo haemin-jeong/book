@@ -1,4 +1,5 @@
 ## 이펙티브 자바 3/E
+![effective-java](https://github.com/haemin-jeong/book/blob/main/image/effective-java.jpg)
 
 각 아이템을 클릭하면 해당 아이템에 관해 정리되어있는 저의 블로그 글로 이동하게됩니다.
 
