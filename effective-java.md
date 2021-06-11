@@ -8,6 +8,6 @@
 - [아이템3. private 생성자나 열거 타입으로 싱글턴임을 보증하라](https://developer-hm.tistory.com/76)
 - [아이템4. 인스턴스화를 막으려거든 private 생성자를 사용하라](https://developer-hm.tistory.com/79)
 - [아이템5. 자원을 직접 명시하지 않고 의존 객체 주입을 사용하라](https://developer-hm.tistory.com/82)
-
+- [아이템6. 불필요한 객체 생성을 피하라](https://developer-hm.tistory.com/100)
 
 
