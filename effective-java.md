@@ -10,4 +10,5 @@
 - [아이템5. 자원을 직접 명시하지 않고 의존 객체 주입을 사용하라](https://developer-hm.tistory.com/82)
 - [아이템6. 불필요한 객체 생성을 피하라](https://developer-hm.tistory.com/99)
 - [아이템7. 다 쓴 객체 참조를 해제하라](https://developer-hm.tistory.com/114)
+- [아이템9. try-finally보다는 try-with-resources를 사용하라](https://developer-hm.tistory.com/115)
 
