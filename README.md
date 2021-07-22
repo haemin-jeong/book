@@ -6,5 +6,5 @@
 
 ## 책 목록
 
-- [이펙티브 자바 3/E](https://github.com/haemin-jeong/book/blob/main/effective-java.md)
+- [이펙티브 자바 3/E](./이펙티브_자바)
 
