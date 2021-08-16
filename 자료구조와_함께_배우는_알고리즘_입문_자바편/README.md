@@ -223,7 +223,99 @@ public class Queen {
 
 코드를 실행해보면 8퀸 문제를 만족하는 92개의 조합이 출력되는 것을 볼 수 있습니다.
 
+## 06. 정렬
 
+### 버블 정렬
 
+**시간 복잡도 : O(n<sup>2</sup>)**
 
+버블 정렬은 아래 그림에서 볼 수 있듯이 인접한 두 원소의 비교를 통해 정렬을 해나가는 알고리즘입니다.
+
+- 요소의 개수가 n개인 배열에서 n-1회 비교, 교환을 하고 나면 가장 큰 요소가 맨 뒤로 이동합니다. 이러한 일련의 비교, 교환 과정을 패스라고 합니다.
+
+- 두번째 패스의 비교 횟수는 첫번째 패스보다 1적은 n-2회, 세번째 패스에서는 n-3회로 패스마다  1회씩 비교 횟수가 줄어듭니다. 그 이유는 각 패스마다 요소 하나씩 정렬이 완료되기 때문입니다.
+
+- 모든 정렬이 완료되려면 n-1회의 패스가 수행되어야 합니다.
+
+![bubble-sort](./images/6/1.png)
+
+#### 소스 코드
+
+```java
+public class Main {
+
+    private static void swap(int[] arr, int n1, int n2) {
+        int temp = arr[n1];
+        arr[n1] = arr[n2];
+        arr[n2] = temp;
+    }
+
+    public static void bubbleSort(int[] arr, int length) {
+        for (int i = 0; i < length - 1; i++) {
+            for (int j = 0; j < length - i - 1; j++) {
+                if (arr[j] > arr[j+1]) {
+                    swap(arr, j, j+1);
+                }
+            }
+        }
+    }
+
+    public static void main(String[] args){
+        int[] arr = {2,4,6,1,5,3,6,7,8};
+
+        bubbleSort(arr, arr.length);
+
+        for (int i : arr) {
+            System.out.print(i + " ");
+        }
+        
+        System.out.println();
+    }
+}
+```
+
+#### 알고리즘 개선(1)
+
+- 어떤 패스에서 요소의 교환 횟수가 0이면 더 이상 정렬할 요소가 없다는 뜻이기 때문에 정렬 작업을 멈추어도 됩니다.
+
+```java
+public static void bubbleSort(int[] arr, int length) {
+    for (int i = 0; i < length - 1; i++) {
+      	int exchange = 0; //패스의 교환 횟수
+        for (int j = 0; j < length - i - 1; j++) {
+            if (arr[j] > arr[j+1]) {
+                swap(arr, j, j+1);
+              	exchange++;
+            }
+        }
+      	
+      	if(exchange == 0) break; //교환 횟수가 0이면 종료
+    }
+}
+```
+
+#### 알고리즘 개선(2)
+
+각각의 패스에서 비교, 교환을 하다가 어떤 시점 이후 교환이 수행되지 않는다면 그보다 뒤 쪽의 요소는 이미 정렬을 마친 상태라고 생각하면 됩니다.
+
+```java
+public static void bubbleSort(int[] arr, int length) {
+  //arr[k]보다 뒤쪽은 정렬을 완료한 상태, 첫번째 패스에서는 모든 요소를 검사해야되기 때문에 length -1
+  int k = length-1; 
+
+  while(k > 0) {
+    int lastSwap = 0;
+ 
+    for (int i = 0; i < k; i++) {
+      if (arr[i] > arr[i+1]) {
+        swap(arr, i, i+1);
+        lastSwap = i; //이번 패스에서 마지막 교환 위치
+      }
+    }
+
+    //한 패스를 마쳤을 때, lastSwap 값을 k에 대입하여 다음에 수행할 패스의 범위를 축소한다.
+    k = lastSwap; 
+  }
+}
+```
 
