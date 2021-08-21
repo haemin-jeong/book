@@ -319,3 +319,39 @@ public static void bubbleSort(int[] arr, int length) {
 }
 ```
 
+## 단순 삽입 정렬
+
+**시간 복잡도 : O(n<sup>2</sup>)**
+
+단순 삽입 정렬은 정렬해야되는 요소를 기준으로 배열의 앞부분의 알맞은 위치에 삽입하는 작업을 반복하여 정렬하는 알고리즘 입니다.
+
+배열에서 정렬할 요소의 앞부분은 정렬이 완료된 부분이고 뒷부분은 아직 정렬이 되지 않은 부분입니다. 
+
+즉, 정렬할 요소의 인덱스가 i라면 arr[0] ~ arr[i-1]은 정렬이 완료된 요소들이고, arr[i] ~ arr[n-1]은 정렬이 아직 되지 않은 부분입니다.
+
+두번째 요소부터 시작하는 정렬되지 않은 부분의 첫번째 요소를 정렬된 부분의 알맞은 위치에 삽입하는 작업을 n-1회 반복합니다.
+
+![simple-selection-sort](./images/6/2.png)
+
+```java
+public class InsertionSort {
+
+    public static void sort(int[] arr, int n) {
+        
+        for (int i = 1; i < n; i++) {
+            int temp = arr[i]; //정렬할 요소
+            
+            //정렬된 부분의 처음(인덱스 0)에 도달하거나, 
+            //temp보다 작거나 같은 값을 찾을 때까지 반복한다.
+            int j;
+            for (j = i; j > 0 && arr[j - 1] > temp; j--) {
+                arr[j] = arr[j - 1];
+            }
+            
+            arr[j] = temp; //삽입
+        }
+    }
+}
+
+```
+
