@@ -438,13 +438,120 @@ public class ShellSort {
 
 참고 : https://gmlwjd9405.github.io/2018/05/08/algorithm-shell-sort.html
 
+## 퀵정렬(Quick Sort)
 
+퀵정렬은 일반적으로 사용되고 있는 아주 빠른 정렬 알고리즘이다.
 
+1. 피벗을 선택한다.
+2. 피벗을 기준으로 좌측 그룹은  피벗보다 작은 값, 우측 그룹은 피벗보다 큰 값으로 나눈다.
+3. 나눠진 각 그룹들을 대상으로 1~2 과정을 그룹의 요소 개수가 1개가 될 때까지 반복한다. 
 
+```java
+import java.util.Arrays;
+import java.util.Scanner;
+import java.util.Stack;
 
+public class QuickSort {
+    static void swap(int[] arr, int idx1, int idx2) {
+        int temp = arr[idx1];
+        arr[idx1] = arr[idx2];
+        arr[idx2] = temp;
+    }
 
+    /**
+     * 재귀 버전
+     */
+    static void quickSortRecur(int[] arr, int left, int right) {
+        int pl = left;
+        int pr = right;
+        int pivot = arr[(pl+pr)/2];
 
+        do {
+            //왼쪽 영역에서 피벗보다 큰 값을 찾는다.
+            while(arr[pl] < pivot) pl++;
 
+            //오른쪽 영역에서 피벗보다 작은 값을 찾는다.
+            while(arr[pr] > pivot) pr--;
+
+            //왼쪽 커서가 오른쪽 커서를 넘어서지 않았다면,
+            if (pl <= pr) {
+                //왼쪽 커서의 요소와 오른쪽 커서의 요소를 교환한다.
+                swap(arr, pl++, pr--);
+            }
+            //왼쪽 커서가 오른쪽 커서를 넘어서기 전까지 반복
+        } while(pl <= pr);
+
+        //나눠진 왼쪽 영역의 크기가 2이상이면 왼쪽 영역 퀵정렬 수행
+        if (left < pr) quickSortRecur(arr, left, pr);
+
+        //나눠진 오른쪽 영역의 크기가 2이상이면 오른쪽 영역 퀵정렬 수행
+        if (right > pl) quickSortRecur(arr, pl, right);
+    }
+
+    /**
+     * 스택 사용 버전
+     */
+    static void quickSortStack(int[] arr, int left, int right) {
+        Stack<Integer> lstack = new Stack<>();
+        Stack<Integer> rstack = new Stack<>();
+
+        lstack.push(left);
+        rstack.push(right);
+
+        while(!lstack.isEmpty()) {
+            int pl = left = lstack.pop();
+            int pr = right = rstack.pop();
+            int pivot = arr[(left+right)/2];
+
+            do {
+                while(arr[pl] < pivot) pl++;
+                while(arr[pr] > pivot) pr--;
+                if (pl <= pr) {
+                    swap(arr, pl++, pr--);
+                }
+            } while(pl <= pr);
+
+            if (left < pr) {
+                lstack.push(left);
+                rstack.push(pr);
+            }
+
+            if (pl < right) {
+                lstack.push(pl);
+                rstack.push(right);
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+
+        System.out.println("퀵 정렬");
+        System.out.print("요소 수:");
+        int n = sc.nextInt();
+        int[] arr = new int[n];
+
+        for (int i = 0; i < n; i++) {
+            System.out.print("arr[" + i + "] : ");
+            arr[i] = sc.nextInt();
+        }
+
+        quickSortRecur(arr, 0, n-1);
+
+        System.out.println("오름차순 정렬 완료");
+        System.out.println(Arrays.toString(arr));
+    }
+}
+
+```
+
+### 퀵정렬 시간복잡도
+
+퀵정렬은 배열을 조금씩 나누어 보다 작은 문제를 해결하는 과정을 반복하므로 시간복잡도는 `O(nlogn)`이다.
+
+하지만 배열의 초깃값이나 피벗의 선택 방법에 따라 시간복잡도가 증가하는 경우가 있다.
+
+예를 들어 매번 단 하나의 요소와 나머지 요소로 나우어지면 n번의 분할이 일어난다. 따라서 최악의 시간복잡도는 `O(n^2)`가 된다.
 
 
 
