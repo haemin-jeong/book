@@ -555,7 +555,88 @@ public class QuickSort {
 
 
 
+## 병합 정렬
 
+병합 정렬은 배열의 앞부분과 뒷부분으로 나누어 각각 정렬한 다음 병합하는 작업을 반복하여 정렬을 수행하는 알고리즘
 
+### 병합 정렬의 과정
 
+if 배열의 요소가 2개 이상인 경우
+
+1. 배열의 앞부분을 병합 정렬로 정렬
+2. 배열의 뒷부분을 병합 정렬로 정렬
+3. 배열의 앞부분과 뒷부분을 병합
+
+### 병합 정렬 소스코드
+
+```java
+import java.util.Arrays;
+import java.util.Scanner;
+
+public class MergeSort {
+
+    static int[] buff;
+
+    //arr[left] ~ arr[right]를 재귀적으로 병합 정렬
+    static void __mergeSort(int[] arr, int left, int right) {
+        if (left < right) {
+            int i;
+            int center = (left + right) / 2;
+            int p = 0;
+            int j = 0;
+            int k = left;
+
+            __mergeSort(arr, left, center); //배열의 앞부분 병합 정렬
+            __mergeSort(arr, center + 1, right); //배열의 뒷부분 병합 정렬
+
+            //배열의 앞부분 arr[left] ~ arr[center]을 buff[center-left]에 복사한다.
+            //for문이 끝날 때 p의 값은 복사한 요소의 개수 center - left + 1이 된다.
+            for (i = left; i <= center; i++) {
+                buff[p++] = arr[i];
+            }
+
+            //배열의 뒷부분 arr[center+1] ~ arr[right]과 buff로 복사한 배열 앞부분 p개를 병합한 결과를 arr에 저장한다.
+            while (i <= right && j < p) {
+                arr[k++] = (buff[j] <= arr[i] ? buff[j++] : arr[i++]);
+            }
+
+            //buff에 남아 있는 요소를 arr에 복사
+            while (j < p) {
+                arr[k++] = buff[j++];
+            }
+        }
+    }
+
+    static void mergeSort(int[] arr, int n) {
+        buff = new int[n];
+
+        __mergeSort(arr, 0, n - 1);
+
+        buff = null;
+    }
+
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+
+        System.out.println("병합 정렬");
+        System.out.print("요소수 : ");
+        int n = sc.nextInt();
+        int[] arr = new int[n];
+
+        for (int i = 0; i < n; i++) {
+            System.out.print("arr[" + i + "] : ");
+            arr[i] = sc.nextInt();
+        }
+
+        mergeSort(arr, n);
+
+        System.out.println("오름차순으로 정렬 완료");
+        System.out.println(Arrays.toString(arr));
+    }
+}
+```
+
+### 병합 정렬 시간 복잡도
+
+배열 병합의 시간 복잡도는 `O(n)` 이고 요소 개수가 n개일 때, 병합 정렬의 단계는 `log n`만큼 필요하므로 전체 시간복잡도는 `O(nlogn)`이다.
 
