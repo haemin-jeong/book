@@ -640,3 +640,317 @@ public class MergeSort {
 
 배열 병합의 시간 복잡도는 `O(n)` 이고 요소 개수가 n개일 때, 병합 정렬의 단계는 `log n`만큼 필요하므로 전체 시간복잡도는 `O(nlogn)`이다.
 
+# 10. 트리
+
+## 트리 용어
+
+- **루트** : 트리의 가장 윗부분에 위치하는 노드, 하나의 트리에는 하나의 루트가 있다.
+- **리프** : 트리의 가장 아랫부분에 위치하는 노드, 더이상 뻗어나갈 수 없는 마지막에 노드가 위치한다.
+- **안쪽 노드** : 루트를 포함하여 리프를 제외한 노드
+- **부모** : 어떤 노드에서 가지로 연결된 위쪽 노드를 부모라고 한다. 노드는 1개의 부모 노드를 가진다.
+- **형제** : 같은 부모를 가지는 노드
+- **조상** : 어떤 노드에서 가지로 연결된 모든 위쪽 노드들
+- **자손** : 어떤 노드에서 가지로 연결된 모든 아래쪽 노드들
+- **레벨** : 루트로부터 얼마나 떨어져있는지에 대한 값. 루트의 레벨은 0, 루트로부터 가지가 하나씩 아래로 뻗을 때마다 1씩 증가
+- **차수** : 노드가 갖는 자식의 수, 모든 노드의 차수가 n이하인 트리를 n진 트리라고한다.
+- **높이** : 루트로부터 가장 멀리 떨어진 리프까지의 거리(리프 레벨의 최댓값)
+- **서브 트리** : 트리 안에서 다시 어떤 노드를 루트로 정하고 그 자손으로 이루어진 트리
+- **널 트리** : 노드, 가지가 없는 트리
+
+## 트리 탐색
+
+### 너비 우선 탐색(breadth-first Search)
+
+![BFS](./images/10/1.png)
+
+낮은 레벨에서 시작해 왼족에서 오른족 방향으로 검색하고 한 레벨에서의 검색이 끝나면 다음 레벨로 내려간다.
+
+검색 순서 : A -> B -> C -> D -> E -> F -> G -> H -> I -> J -> K -> L
+
+### 깊이 우선 탐색(depth-first search)
+
+깊이 우선 탐색은 리프까지 내려가면서 검색하는 것을 우선순위로 하는 탐색 방법이다.
+
+리프에 도달해 더 이상 검색을 진행할 곳이 없는 경우 부모에게 돌아가고, 그런 다음 다시 자식 노드로 내녀간다.
+
+![BFS](./images/10/2.png)
+
+깊이 우선 탐색은 언제 노드를 방문할지에 따라 3가지로 구분한다.
+
+### 전위 순회(Preorder)
+
+탐색 순서 : 노드 방문 -> 왼쪽 자식 -> 오른쪽 자식
+
+A방문 -> B로 이동 -> C로 이동
+
+위의 예시 트리에서 전위 순회로 깊이 우선 트리를 진행하면 다음과 같은 순서로 방문한다.
+
+A -> B -> D -> H -> E -> I -> J -> C -> F -> K -> L -> G
+
+### 중위 순회(Inorder)
+
+탐색 순서 : 왼쪽 자식 -> 노드 방문 -> 오른쪽 자식
+
+B로 이동 -> A 방문 -> C로 이동
+
+위의 예시 트리에서 중위 순회로 깊이 우선 트리를 진행하면 다음과 같은 순서로 방문한다.
+
+H -> D -> B -> I -> E -> J -> A -> K -> F -> L -> C -> G
+
+### 후위 순회(Postorder)
+
+탐색 순서 : 왼쪽 자식 -> 오른쪽 자식 -> (돌아와) 노드 방문
+
+위의 예시 트리에서 후위 순회로 깊이 우선 트리를 진행하면 다음과 같은 순서로 방문한다.
+
+H -> D -> I -> J -> E -> B -> K -> L -> F -> G -> C -> A
+
+## 이진 트리와 이진검색트리
+
+### 완전이진트리
+
+루트부터 노드가 채워져 있으면서 같은 레벨에서는 왼쪽에서 오른쪽으로 노드가 채워져있는 이진트리를 완전이진트리라고한다.
+
+1. 마지막 레벨을 제외한 레벨은 노드를 가득 채운다.
+2. 마지막 레벨은 왼쪽에서 오른쪽 방향으로 노드를 채우지만, 끝까지 채우지는 않아도 된다.
+
+높이가 k인 완전이진트리의 노드의 최대 개수는 2<sup>k+1</sup> - 1 개 -> 따라서 n개의 노드를 저장할 수 있는 완전이진트리의 높이는 log n
+
+### 이진검색트리
+
+이진검색트리는 아래 조건을 만족하면 된다.
+
+1. 어떤 노드를 기준으로 왼쪽 서브 트리의 모든 노드의 키 값은 기준 노드의 키 값보다 작아야한다.
+2. 어떤 노드를 기준으로 오른쪽 서브 트리의 모든 노드의 키 값은 기준 노드의 키 값보다 커야한다.
+3. 같은 키 값을 갖는 노드는 없어야한다.
+
+![BFS](./images/10/3.png)
+
+**이진 검색 트리를 중위 순회하면 다음과 같이 키 값의 오름차순으로 노드를 얻을 수 있다.**
+
+1 -> 4 -> 5 -> 6 -> 7 -> 9 -> 11 -> 12 -> 13 -> 14 -> 15 -> 18
+
+```java
+import java.util.Comparator;
+
+public class BinaryTree<K, V> {
+    //노드
+    static class Node<K, V> {
+        private K key;
+        private V data;
+        private Node<K,V> left;
+        private Node<K,V> right;
+
+        public Node(K key, V data, Node<K, V> left, Node<K, V> right) {
+            this.key = key;
+            this.data = data;
+            this.left = left;
+            this.right = right;
+        }
+
+        K getKey() {
+            return key;
+        }
+
+        V getValue() {
+            return data;
+        }
+
+        void print() {
+            System.out.println(data);
+        }
+    }
+
+    private Node<K, V> root;
+    private Comparator<? super K> comparator = null;
+
+    public BinaryTree() {
+        root = null;
+    }
+
+    public BinaryTree(Comparator<? super K> c) {
+        this();
+        comparator = c;
+    }
+
+    //두 키 값을 비교
+    private int comp(K key1, K key2) {
+        return (comparator == null) ? ((Comparable<K>)key1).compareTo(key2) : comparator.compare(key1, key2);
+    }
+
+    /*
+    이진검색트리 검색 과정
+    1. 루트부터 선택하여 검색을 진행. 여기서 선택하는 노드는 p
+    2. 노드가 null이면 검색에 실패한다.
+    3. 검색하는 값 key와 선택한 노드 p의 키 값을 비교하여
+        - 값이 같으면 검색에 성공 -> 종료한다.
+        - key가 작으면 선택한 노드 p에 왼쪽 자식 노드를 대입(왼쪽으로 검색 진행)
+        - key가 크면 선택한 노드 p에 오른쪽 자식 노드를 대입(오른쪽으로 검색 진행)
+    4. 2번 과정으로 되돌아간다.
+     */
+    public V search(K key) {
+        Node<K, V> p = root;
+
+        while (true) {
+            if (p == null) {
+                return null;
+            }
+
+            int cond = comp(key, p.getKey());
+
+            if (cond == 0) {
+                return p.getValue();
+            } else if (cond < 0) { //key 쪽이 작으면
+                p = p.left; //왼쪽 서브트리 탐색
+            } else { //key 쪽이 크면
+                p = p.right; //오른쪽 서브트리 탐색
+            }
+        }
+    }
+
+    /*
+    이진검색트리 삽입 과정
+    1. 루트를 선택한다. 여기서 선택하는 노드는 node
+    2. 삽입할 키 key와 선택 노드 node의 키 값을 비교한다. 값이 같다면 삽입 실패 -> 종료
+        - 값이 같지 않은 경우 key 값이 삽입할 값보다 작으면
+            - 왼쪽 자식 노드가 없는 경우 노드를 삽입 후 종료
+            - 왼쪽 자식 노드가 있는 경우에는 선택한 노드를 왼쪽 자식 노드로 옮긴다.
+        - key 값이 삽입할 값보다 크면
+            - 오른쪽 자식 노드가 없는 경우 노드를 삽입 후 종료
+            - 오른쪽 자식 노드가 있는 경우에는 선택한 노드를 오른쪽 자식 노드로 옮긴다.
+     */
+
+    //node를 루트로 하는 서브 트리에 노드<K,V>를 삽입
+    private void addNode(Node<K, V> node, K key, V data) {
+        int cond = comp(key, node.getKey());
+
+        if (cond == 0) {
+            return;
+        } else if (cond < 0) {
+            if (node.left == null) {
+                node.left = new Node<K, V>(key, data, null, null);
+            } else {
+                addNode(node.left, key, data);
+            }
+        } else {
+            if (node.right == null) {
+                node.right = new Node<K, V>(key, data, null, null);
+            } else {
+                addNode(node.right, key, data);
+            }
+        }
+    }
+
+    //노드를 삽입
+    public void add(K key, V data) {
+        if (root == null) {
+            root = new Node<K, V>(key, data, null, null);
+        } else {
+            addNode(root, key, data);
+        }
+    }
+
+    /*
+    이진검색트리 삭제
+    
+    자식 노드가 없는 노드를 삭제하는 경우
+    - 삭제할 노드가 부모 노드의 왼쪽 자식이면 부모의 왼쪽 포인터를 null로 한다.
+    - 삭제할 노드가 부모 노드의 오른쪽 자식이면 부모의 오른쪽 포인트를 null로 한다.
+
+    자식 노드가 1개인 노드를 삭제하는 경우
+    - 삭제 대상 노드가 부모 노드의 왼쪽 자식이면 부모의 왼쪽 포인터가 삭제 대상 노드의 자식을 가리키도록 한다.
+    - 삭제 대상 노드가 부모 노드의 오른쪽 자식이면 부모의 오른쪽 포인터가 삭제 대상 노드의 자식을 가리키도록 한다.
+
+    자식 노드가 2개인 노드를 삭제하는 경우
+    1. 삭제할 노드의 왼쪽 서브트리에서 키 값이 가장 큰 노드를 검색
+    2. 검색한 노드를 삭제 위치로 옮긴다.(검색한 노드의 데이터를 삭제 대상 노드 위치로 복사)
+    3. 옮긴 노드를 삭제
+        - 옮긴 노드에 자식이 없으면 : 자식 노드가 없는 노드의 삭제 순서에 따라 노드 삭제
+        - 옮긴 노드에 자식이 있으면 : 자식 노드가 1개인 노드의 삭제 순서에 따라 노드 삭제
+     */
+    //키 값이 key인 노드를 삭제
+    public boolean remove(K key) {
+        Node<K, V> p = root; //스캔 중인 노드
+        Node<K, V> parent = null; //스캔 중인 노드의 부모 노드
+        boolean isLeftChild = true;
+
+        //삭제할 키를 검색. 검색에 성공하면 p는 찾은 노드, parent는 찾은 노드의 부모 노드를 참조한다.
+        while (true) {
+            if (p == null) {
+                return false;
+            }
+
+            int cond = comp(key, p.getKey());
+
+            if (cond == 0) { //검색 성공
+                break;
+            } else {
+                parent = p;
+
+                if (cond < 0) {
+                    isLeftChild = true;
+                    p = p.left;
+                } else {
+                    isLeftChild = false;
+                    p = p.right;
+                }
+            }
+        }
+
+        //자식 노드가 없거나, 1개인 노드를 삭제하는 경우
+        if (p.left == null) { //p에는 왼쪽 자식이 없음
+            if (p == root) {
+                root = p.right;
+            } else if (isLeftChild) {
+                parent.left = p.right; //부모의 왼쪽 포인터가 오른쪽 자식을 가리킴
+            } else {
+                parent.right = p.right; //부모의 오른쪽 포인터가 오른쪽 자식을 가리킴
+            }
+        } else if (p.right == null) { //p에는 오른쪽 자식이 없음
+            if (p == root) {
+                root = p.left;
+            } else if (isLeftChild) {
+                parent.left = p.left; //부모의 왼쪽 포인터가 왼쪽 자식을 가리킴
+            } else {
+                parent.right = p.left; //부모의 오른쪽 포인터가 왼쪽 자식을 가리킴
+            }
+        } else { //자식 노드가 2개인 노드를 삭제하는 경우
+            parent = p;
+            Node<K, V> left = p.left;
+            isLeftChild = true;
+
+            while (left.right != null) { //가장 큰 노드 left를 검색
+                parent = left;
+                left = left.right;
+                isLeftChild = false;
+            }
+
+            p.key = left.key;
+            p.data = left.data;
+
+            if (isLeftChild) {
+                parent.left = left.left;
+            } else {
+                parent.right = left.left;
+            }
+        }
+
+        return true;
+    }
+
+    //node를 루트로 하는 서브 트리의 노드를 키 값의 오름차순으로 출력
+    private void printSubTree(Node node) {
+        if (node != null) {
+            printSubTree(node.left);
+            System.out.println(node.key + " " + node.data);
+            printSubTree(node.right);
+        }
+    }
+
+    //모든 노드를 키 값의 오름차순으로 출력
+    public void print() {
+        printSubTree(root);
+    }
+}
+```
+
