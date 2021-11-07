@@ -103,6 +103,50 @@ public class BinarySearch {
 
 ## 05. 재귀 알고리즘
 
+### 팩토리얼
+
+```java
+public class Factorial {
+    static int factorial(int n) {
+        if (n > 0) {
+            return n * factorial(n-1);
+        } else {
+            return 1;
+        }
+    }
+}
+```
+
+### 하노이 탑
+
+```java
+import java.util.Scanner;
+
+public class Hanoi {
+    //no개의 원반을 from번 기둥에서 to번 기둥으로 옮김
+    static void move(int no, int from, int to) {
+        if (no > 1) {
+            move(no - 1, from, 6 - from - to);
+        }
+
+        System.out.println("원반[" + no + "]을 " + from + "기둥에서 " + to + "기둥으로 옮김");
+
+        if (no > 1) {
+            move(no - 1, 6 - from - to, to);
+        }
+    }
+
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        System.out.println("하노이탑");
+        System.out.print("원반 개수 : ");
+        int n = sc.nextInt();
+
+        move(n, 1, 3);
+    }
+}
+```
+
 ### 8퀸 문제
 
 #### 8퀸 문제란?
