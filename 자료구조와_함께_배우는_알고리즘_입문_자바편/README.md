@@ -70,6 +70,37 @@
 
 ## 03. 검색
 
+### 이진 검색
+
+이진 검색은 요소가 오름차순 또는 내림차순으로 정렬되어 배열에서 검색하는 알고리즘.
+
+검색 범위를 반씩 줄여나가며 검색한다.
+
+```java
+public class BinarySearch {
+
+    static int binarySearch(int[] arr, int n, int key) {
+        int left = 0;
+        int right = n - 1;
+
+        while (left <= right) {
+            int center = (left + right) / 2;
+
+            if (arr[center] == key) {
+                return center;
+            } else if (arr[center] < key) {
+                left = center + 1;
+            } else {
+                right = center - 1;
+
+            }
+        }
+
+        return -1;
+    }
+}
+```
+
 ## 05. 재귀 알고리즘
 
 ### 8퀸 문제
