@@ -715,6 +715,72 @@ public class MergeSort {
 
 배열 병합의 시간 복잡도는 `O(n)` 이고 요소 개수가 n개일 때, 병합 정렬의 단계는 `log n`만큼 필요하므로 전체 시간복잡도는 `O(nlogn)`이다.
 
+## 도수 정렬(Counting Sort)
+
+- 도수 정렬 알고리즘은 요소들의 비교, 교환 작업 없이 단일 for문 만을 사용하여 정렬할 수 있는 매우 빠른 알고리즘이다.
+- 도수분포표가 필요하기 때문에 요소들의 최솟값, 최댓값을 알고 있어야 정렬할 수 있다.
+
+```java
+import java.util.Arrays;
+
+public class CountingSort {
+
+    //0 ~ max 범위의 값을 정렬하는 도수 정렬
+    static void countingSort(int[] arr, int n, int max) {
+        int[] f = new int[max + 1]; //누적 도수
+        int[] b = new int[n]; //작업용 목적 배열
+
+        //1. 도수분포표 만들기 : f[i]는 배열 arr에서 요소 i의 개수
+        for (int i = 0; i < n; i++) {
+            f[arr[i]]++;
+        }
+
+        //2. 누적 도수분포표 만들기 : f[i]는 f[0] ~ f[i]의 합
+        for (int i = 1; i <= max; i++) {
+            f[i] += f[i - 1];
+        }
+
+        //3. 목적 배열 만들기
+        //- f[i]의 값이 num이라면 정렬 후 배열에서 요소 i의 위치는 num-1이 된다.
+        //- 마지막위치부터 스캔하지 않고 처음부터 스캔하면 원래 배열에서 앞선 위치에 있던 num이 뒤에 있던 같은 숫자 num보다 뒤로 정렬이 되어 위치가 반대로 바뀐다. 주의하자.
+        for (int i = n - 1; i >= 0; i--) {
+            b[--f[arr[i]]] = arr[i];
+        }
+
+        //4. 배열 복사하기 : 원래 배열로 정렬된 배열을 복사한다.
+        System.arraycopy(b, 0, arr, 0, n);
+    }
+
+    //범위를 양수로 제한하지 않고 min~max범위의 값을 정렬하는 도수 정렬
+    static void countingSortWithMinusNum(int[] arr, int n, int min, int max) {
+        int[] f = new int[max - min + 1];
+        int[] b = new int[n];
+
+        for (int i = 0; i < n; i++) {
+            f[arr[i] - min]++;
+        }
+
+        for (int i = 1; i <= max - min; i++) {
+            f[i] += f[i-1];
+        }
+
+        for (int i = n - 1; i >= 0; i--) {
+            b[--f[arr[i]  - min]] = arr[i];
+        }
+
+        System.arraycopy(b, 0, arr, 0, n);
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {7, 22, -5,22, 22, 11, 23, 0, 120, 77, 45, 300,3};
+
+        countingSortWithMinusNum(arr, 13, -5, 300);
+
+        System.out.println(Arrays.toString(arr));
+    }
+}
+```
+
 # 10. 트리
 
 ## 트리 용어
