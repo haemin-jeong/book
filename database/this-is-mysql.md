@@ -1121,3 +1121,193 @@ IN은 NOT IN과 반대로 첫번쨰 쿼리 결과 중에서, 두번쨰 쿼리에
 SELECT name, phoneNum FROM member 
 	where name IN(SELECT name FROM member where phoneNum IS NULL);
 ```
+
+## MySQL 프로그래밍
+MySQL도 Java, C++ 등과 같은 프로그래밍 언어와 비슷하게 분기, 흐름 제어, 반복의 기능이 있다.
+### IF...ELSE
+```sql
+DROP PROCEDURE IF EXISTS ifProc2;
+use employees;
+DELIMITER $$
+CREATE PROCEDURE ifProc()
+	BEGIN
+	/*
+	사용자 정의 변수를 만들때 @를 앞에 붙혀야한다 했지만,
+	스토어드 프로시저나 함수에서는 DELCLARE문을 사용해서 지역변수를 선언하고 ,
+	@을 붙히지 않고 일반 프로그래밍 언어의 변수처럼 그냥 사용하면된다.
+	*/
+	DECLARE hireDATE DATE; -- 입사일
+	DECLARE curDATE DATE; -- 오늘
+	DECLARE days INT; -- 근무 일수
+
+	-- SELECT 열이름 INTO 변수명 FROM 테이블 : 조회된 열의 결과를 변수에 대입한다.
+	SELECT hire_date INTO hireDATE -- hire_date열의 결과를 hireDATE에 대입
+	FROM employees.employees
+	WHERE emp_no = 10001;
+
+	SET curDATE = CURRENT_DATE();
+	SET days = DATEDIFF(curDate, hireDate);
+
+	IF(days/365) >= 5 THEN
+		SELECT CONCAT('입사한지 ', 5, '년이 지났습니다. 축하합니다!');
+	ELSEIF (days/365) >= 1 THEN
+		SELECT CONCAT('입사한지 ', 1, '년이 지났습니다. 축하합니다!');
+	ELSE
+		SELECT '입사한지 ' + days + '일 밖에 안되었네요. 열심히 일하세요.';
+	END IF;
+END $$
+DELIMITER ;
+
+CALL ifProc();
+```
+### CASE
+```sql
+DROP PROCEDURE IF EXISTS caseProc;
+DELIMITER $$
+CREATE PROCEDURE caseProc()
+BEGIN
+	DECLARE point INT;
+	DECLARE credit CHAR(1);
+	SET point = 77;
+
+	CASE
+		WHEN point >= 90 THEN
+			SET credit = 'A';
+		WHEN point >= 80 THEN
+			SET credit = 'B';
+		WHEN point >= 70 THEN
+			SET credit = 'C';
+		WHEN point >= 60 THEN
+			SET credit = 'D';
+		ELSE
+			SET credit = 'F';
+	END CASE;
+
+SELECT CONCAT('점수 : ', point, ', 학점 : ', credit);
+
+END $$
+DELIMITER ;
+
+CALL caseProc();
+```
+CASE 문은 SELECT 절에서 더 많이 사용된다.
+```sql
+SELECT u.userID, u.name, SUM(price*amount) AS '총 구매액',
+	CASE
+		WHEN (SUM(price*amount) >= 1500) THEN '최우수고객'
+		WHEN (SUM(price*amount) >= 1000) THEN '우수고객'
+		WHEN (SUM(price*amount) >= 1) THEN '일반고객'
+		ELSE '유령고객'
+	END AS '고객등급'
+FROM buytbl b RIGHT OUTER JOIN usertbl u ON b.userId = u.userId
+GROUP BY u.userID, u.name ORDER BY sum(price*amount) DESC;
+```
+### WHILE, ITERATE/LEAVE
+INTERATE는 CONTINUE문과 비슷하다.
+LEAVE는 BREAK문과 비슷하다.
+
+형식
+```sql
+WHILE <부울 식> DO
+	SQL 명령문들
+END WHILE;
+```
+
+예제
+```sql
+-- 1~100합을 구하는데 7의 배수는 제외하고, 합이 1000을 초과하면 종료
+DROP PROCEDURE IF EXISTS whileProc;
+DELIMITER $$
+CREATE PROCEDURE whileProc()
+BEGIN
+	DECLARE i INT;
+	DEClARE sum INT;
+	SET i = 1;
+	SET sum = 0;
+
+	myWhile:WHILE (i <= 100) DO
+		IF(i%7 = 0) THEN
+			SET i = i + 1;
+			ITERATE myWhile; -- myWhile 레이블로 가서 계속 진행
+		END IF;
+
+		SET sum = sum + i;
+
+		IF(sum > 1000) THEN
+			LEAVE myWhile; -- myWhile 레이블을 떠남, 즉 WHILE문 종료
+		END IF;
+
+		SET i = i+1;
+	END WHILE;
+
+	SELECT sum;
+END $$
+DELIMITER ;
+CALL whileProc();
+```
+### 오류 처리
+오류가 발생했을 때, 직업 오류를 처리할 수 있는 방법을 제공한다.
+```sql
+-- 형식
+DECLARE 액션 HANDLER FOR 오류조건 처리할_문장;
+```
+- 액션 : 오류 발생 시의 행동, CONTINUE 또는 EXIT 둘 중에 하나 사용
+	- CONTINUE : '처리할_문장' 부분이 실행된다.
+- 오류조건 : 어떤 오류를 처리할 것인지 지정
+	- 오류 코드 숫자
+	- SQLSTATE '상태코드' -> 상태코드는 5자리 문자열
+	- SQLEXCEPTION -> 대부분의 오류
+	- SQLWARNING -> 경고 메시지
+	- NOT FOUND -> 커서, SELECT...INTO에서 발생되는 오류
+	- 등
+- 처리할_문장 : 처리할 문장이 여러 개인 경우 BEGIN...END로 묶어줄 수 있다.
+```sql
+-- 예제1
+DROP PROCEDURE IF EXISTS errorProc;
+DELIMITER $$
+CREATE PROCEDURE errorProc()
+BEGIN
+	-- 오류코드 1146은 테이블이 없을 경우 발생한다.
+	DECLARE CONTINUE HANDLER FOR 1146 SELECT '테이블이 없습니다.' AS '오류 메시지';
+
+	SELECT * FROM noTable; -- noTable은 없는 테이블
+END $$
+DELIMITER ;
+CALL errorProc();
+
+-- 예제2
+DROP PROCEDURE IF EXISTS errorProc2;
+DELIMITER $$
+CREATE PROCEDURE errorProc2()
+BEGIN
+	DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+	BEGIN
+		SHOW ERRORS; -- 오류에 대한 코드와 메시지 출력
+		SHOW COUNT(*) ERRORS; -- 발생된 오류의 개수 출력
+		SHOW WARNINGS; -- 경고에 대한 코드와 메시지 출력
+		ROLLBACK;
+	END;
+	... 
+END $$
+DELIMITER ;
+CALL errorProc2();
+```
+### 동적 SQL
+쿼리문을 바로 실행하지 않고, 준비만 해놓고 나중에 실행하는 것을 '동적 SQL'이라고한다.
+```sql
+-- SQL문을 바로 실행하지 않고 준비만 해놓는다.
+PREPARE myQuery FROM 'SELECT * FROM member WHERE memberId = "abc"';
+
+-- 준비한 쿼리문을 실행
+EXECUTE myQuery;
+
+-- SQL문 해제
+DEALLOCATE PREPARE myQuery;
+```
+PREPARE문에서 향후 입력될 값을 ?로 만들어놓고, EXECUTE문에서 USING을 사용해서 변수의 값을 전달받아 사용할 수도 있다.
+```sql
+SET @memberId = 'abc';
+PREPARE myQuery FROM 'SELECT * FROM memberWHERE userId = ?';
+EXECUTE myQuery USING @memberId;
+DEALLOCATE PREPARE myQuery;
+```
