@@ -1311,3 +1311,154 @@ PREPARE myQuery FROM 'SELECT * FROM memberWHERE userId = ?';
 EXECUTE myQuery USING @memberId;
 DEALLOCATE PREPARE myQuery;
 ```
+# 테이블 
+참고 : auto_increment 지정한 열은 primary_key 또는 unique_key로 반드시 지정해야된다.
+
+## 제약 조건
+제약조건이란 데이터의 무결성을 지키기 위한 제한된 조건을 의미한다.
+- 무결성: 데이터의 정보가 변경되거나 오염되지 않도록하는 원칙  
+
+어떠한 데이터를 입력할 때, 특정 조건을 만족했을 때에만 입력이 되도록 제약할 수 있다.
+MySQL은 아래와 같은 제약조건을 제공한다.
+- PRIMARY KEY 제약조건
+- FOREIGN KEY 제약조건
+- UNIQUE 제약조건
+- CHECK 제약조건(8.0.16버전부터 정식 지원)
+- DEFAULT 정의
+- NULL 값 허용
+
+### 기본 키 제약 조건
+- **기본키는 값이 중복될 수 없으며, NULL이어서는 안된다.**
+- 기본키로 생성한 것은 자동으로 클러스터형 인덱스가 생성된다.
+- 기본키는 하나 이상의 열에 설정할 수 있다.
+- 모든 제약조건은 이름을 가지는데, CREATE TABLE 구문 내에서 기본키를 설정하면 제약 조건의 이름을 MySQL이 자동으로 지어준다.
+
+참고 : SHOW KEYS FROM 테이블 이름 -> 테이블에 지정된 키 보기
+
+기본키 제약 조건의 이름을 따로 지정해주는 방법은 다음과 같다.
+```sql
+-- 테이블 생성시에 지정
+CREATE TABLE member ( 
+	userID CHAR(8) NOT NULL,
+    name VARCHAR(10) NOT NULL,
+    birthYear INT NOT NULL,
+	-- CONSTRAINT는 생략 가능, PK_memberL_userID 는 제약조건 이름
+    CONSTRAINT PRIMARY KEY PK_member_userID (userID)
+);
+
+-- 이미 만들어진 테이블을 수정하여 지정
+ALTER TABLE member ADD CONSTRAINT PK_member_userID PRIMARY KEY (userID);
+```
+
+### 외래 키 제약 조건
+- 외래 키 제약조건은 두 테이블 사이의 관계를 선언함으로써 데이터의 무결성을 보장해주는 역할을 하며, 외래 키 관계를 설정하면 하나의 테이블이 다른 테이블에 의존하게 된다.
+- **외래 키 테이블에 데이터를 입력할 때는 기준 테이블을 참조해서 입력하므로 기준 테이블에 이미 데이터가 존재해야한다.**
+- 외래 키 테이블이 참조하는 기준 테이블의 열은 반드시 Primary Key 또는 Unique 제약 조건이 설정되어 있어야한다.
+```sql
+CREATE TABLE member ( 
+	userID CHAR(8) NOT NULL PRIMARY KEY,
+    name VARCHAR(10) NOT NULL,
+    birthDate DATE NOT NULL
+);
+
+CREATE TABLE orders (
+	id int auto_increment not null primary key,
+    memberID char(8) not null,
+    itemName char(6) not null,
+	-- 이름 지정할 필요 없으면 CONSTRAINT FK_member_orders 생략하면 된다.
+	-- 기준 테이블 열 이름과 외래 키 테이블의 열이름이 달라도 된다.
+    CONSTRAINT FK_member_orders FOREIGN KEY(memberID) REFERENCES member(userID)
+);
+
+-- ALTER TABLE 구문을 사용하여 외래키 지정
+ALTER TABLE orders 
+	ADD CONSTRAINT FK_member_orders 
+	FOREIGN KEY (memberID) 
+	REFERENCES member(memberID);
+```
+외래 키의 옵션중 ON DELETE CASCADE 또는 ON UPDATE CASCADE를 사용하면 기준 테이블의 데이터가 변경 되었을 떄, 외래 키 테이블에도 자동으로 적용되도록 할 수 있다.
+
+- ON DELETE CASCADE : 기준 테이블 데이터 삭제시 외래 키 테이블의 관련된 데이터도 함께 삭제
+- ON UPDATE CASCADE : 기준 테이블의 키 값 변경시 외래 키 테이블의 외래 키 값도 함께 변경  
+
+별도로 옵션을 지정하지 않으면 ON DELETE NO ACTION, ON UPDATE NO ACTION을 지정한 것과 같다.
+```sql
+-- 외래 키 제거
+ALTER TABLE orders DROP CONSTRAINT FK_member_orders;
+
+-- ON UPDATE CASCADE 옵션 사용 예
+ALTER TABLE orders 
+	ADD CONSTRAINT FK_member_orders 
+    FOREIGN KEY (memberID) 
+    REFERENCES member(memberID) 
+    ON UPDATE CASCADE;
+```
+
+### UNIQUE 제약 조건
+- **UNIQUE 제약 조건은 NULL 값은 허용하지만 중복되지 않는 유일한 값을 입력해야 한다는 조건이다.**
+
+UNIQUE 제약 조건을 추가하는 방법은 다음과 같다.
+```sql
+-- 1. 컬럼을 정의하면서 지정
+CREATE TABLE member (
+	userID CHAR(8) NOT NULL PRIMARY KEY,
+    eamil CHAR(30) NULL UNIQUE
+);
+
+-- 2. 컬럼 정의 후 지정
+CREATE TABLE member (
+	userID CHAR(8) NOT NULL PRIMARY KEY,
+    eamil CHAR(30) NULL,
+    -- AK는 Alternate Key의 약자로 Unique는 Alternate Key로도 불린다.
+    CONSTRAINT AK_email UNIQUE (email)
+);
+```
+참고 : 제약 조건의 이름은 일반적으로 PRIMARY KEY는 PK, FOREIGN KEY는 FK, Uique는 AK를 주로 사용한다. AK는 Alternate Key의 약자로 Unique는 Alternate Key로도 불린다.
+
+### CHECK 제약 조건
+CHECK 제약 조건은 입력되는 데이터가 지정한 조건에 맞게 입력되었는지 점검하는 기능을 한다.
+```sql
+CREATE TABLE member (
+	id INT PRIMARY KEY,
+    name VARCHAR(10),
+    -- birthYear는 1900 이상, 2023 이하의 값이어야 한다.
+    birthYear INT CHECK (birthYear >= 1900 AND birthYear <= 2023),
+    mobile1 CHAR(3) NULL,
+    -- mobile1은 011, 019, 010 중 하나의 값이어야 한다.
+    CONSTRAINT CK_mobile1 CHECK (mobile1 IN ('011', '019', '010'))
+);
+
+-- ALTER TABLE 문으로 CHECK 제약 조건을 추가할 수도 있다.
+ALTER TABLE member ADD CONSTRAINT CK_name CHECK (name IS NOT NULL);
+```
+CHECK 제약 조건을 추가하지만, 작동하지 않도록 하려면 제약 조건 뒤에 `NOT ENFORCED` 구문을 추가하면 되지만 거의 사용되지 않는다.
+
+### DEFAULT 정의
+**DEFAULT는 값을 입력하지 않았을 때, 자동으로 입력되는 디폴트 값을 정의하는 방법이다.**
+
+DEFAULT를 설정하는 방법은 다음과 같다.
+```sql
+-- 1. 테이블 생성 시에 설정
+CREATE TABLE member (
+	id INT NOT NULL PRIMARY KEY,
+    name varchar(10) NOT NULL DEFAULT '익명 사용자',
+    height SMALLINT
+);
+
+-- 2. ALTER TABLE 문을 사용하여 설정
+ALTER TABLE member ALTER COLUMN height SET DEFAULT 170;
+```
+
+DEFAULT가 설정된 열에 DEFAULT 값을 입력하는 방법은 다음과 같다.
+```sql
+-- default(소문자)는 DEFAULT로 설정된 값을 입력해준다.
+INSERT INTO member VALUES (1, default, default);
+
+-- 열 이름을 명시하지 않으면 DEFAULT로 설정된 값을 입력해준다.
+INSERT INTO member(id) VALUES(2);
+```
+### NULL 값 허용
+- NULL은 NULL 허용, NOT NULL은 NULL을 허용하지 않는다.
+- PRIMARY KEY가 설정된 열은 어차피 NULL이 올 수 없기 떄문에 NOT NULL을 생략해도 된다.
+- NULL 저장 시 고정 길이 문자열 타입 CHAR는 공간을 모두 차지하지만, 가변 길이 문자열 타입 VARCHAR는 공간을 차지하지 않는다. 그렇기 때문에 NULL이 많이 입력되는 컬럼이라면 가변 길이 문자열 타입을 사용하는 것이 좋다.
+
