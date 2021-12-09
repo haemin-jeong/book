@@ -1393,6 +1393,11 @@ ALTER TABLE orders
     REFERENCES member(memberID) 
     ON UPDATE CASCADE;
 ```
+외래 키 컬럼에 기준 테이블에 없는 값을 입력하려하면 외래 키 제약 조건을 만족하지 않는다는 에러가 발생한다. 하지만 어떤 경우 외래 키 테이블의 데이터를 먼저 입력해야 할수도 있다. 그런 경우 외래키 제약 조건을 잠시 비활성화 시키는 방법은 다음과 같다.
+```sql
+SET foreign_key_checks = 0 -- 외래 키 제약 조건 검사 비활성화
+SET foreign_key_checks = 1 -- 외래 키 제약 조건 검사 홯성화
+```
 
 ### UNIQUE 제약 조건
 - **UNIQUE 제약 조건은 NULL 값은 허용하지만 중복되지 않는 유일한 값을 입력해야 한다는 조건이다.**
@@ -1431,7 +1436,8 @@ CREATE TABLE member (
 -- ALTER TABLE 문으로 CHECK 제약 조건을 추가할 수도 있다.
 ALTER TABLE member ADD CONSTRAINT CK_name CHECK (name IS NOT NULL);
 ```
-CHECK 제약 조건을 추가하지만, 작동하지 않도록 하려면 제약 조건 뒤에 `NOT ENFORCED` 구문을 추가하면 되지만 거의 사용되지 않는다.
+CHECK 제약 조건을 추가하지만, 작동하지 않도록 하려면 제약 조건 뒤에 `NOT ENFORCED` 구문을 추가하면 되지만 거의 사용되지 않는다.  
+참고 : MySQL에서는 CHECK 제약 조건이 설정된 컬럼을 삭제 시 그냥 삭제 되지만, 다른 DBMS에서는 CHECK 제약 조건이 설정된 열은 삭제되지 않는다.
 
 ### DEFAULT 정의
 **DEFAULT는 값을 입력하지 않았을 때, 자동으로 입력되는 디폴트 값을 정의하는 방법이다.**
@@ -1462,3 +1468,70 @@ INSERT INTO member(id) VALUES(2);
 - PRIMARY KEY가 설정된 열은 어차피 NULL이 올 수 없기 떄문에 NOT NULL을 생략해도 된다.
 - NULL 저장 시 고정 길이 문자열 타입 CHAR는 공간을 모두 차지하지만, 가변 길이 문자열 타입 VARCHAR는 공간을 차지하지 않는다. 그렇기 때문에 NULL이 많이 입력되는 컬럼이라면 가변 길이 문자열 타입을 사용하는 것이 좋다.
 
+## 테이블 압축
+테이블 압축 기능은 대용량 테이블의 공간을 절약한다.
+MySQL 5.0 버전부터 제공하기 시작했으며, MySQL 8.0 버전부터 내부적인 기능이 더욱 강화되어 MySQL이 허용하는 최대 용량의 데이터도 오류없이 압축이 잘 동작한다.
+```sql
+CREATE TABLE member(
+	id BIGINT, 
+    name VARCHAR(10)
+) ROW_FORMAT=COMPRESSED; -- 압축 설정
+```
+동일한 컬럼과 로우를 가진 압축 테이블, 일반 테이블 두 개의 테이블을 만들고 `SHOW TABLE STATUS DB명` 쿼리를 사용하여 테이블의 상태를 보면 압축 테이블의 평균 행 길이(Avg_row_length)나 데이터 길이(Data_length)가 훨씬 작은 것을 볼 수 있다(데이터 값의 분포에 따라 압축률은 달라질 수 있다).
+
+## 임시 테이블
+```sql
+-- 형식 : TABLE 위치에 TEPORARY TABLE로 써주기만 하면 된다.
+CREATE TEMPORARY TABLE [IF NOT EXISTS] 테이블명 (
+	-- 컬럼 정의
+);
+```
+임시 테이블은 이름 그대로 임시로 사용되는 테이블이다.
+- 임시 테이블은 세션 내에서만 존재하며, 세션 종료시 자동 삭제된다.
+- 임시 테이블은 생성한 클라이언트에서만 접근할 수 있다.
+- 임시 테이블은 데이터베이스 내의 다른 테이블과 같은 이름으로 만들 수 있지만, 이 경우 임시 테이블이 삭제될 때까지 기존 테이블에는 접근할 수 없고 임시 테이블에만 접근할 수 있다.
+
+임시 테이블이 삭제되는 시점은 다음과 같다.
+- DROP TABLE로 직접 삭제 시
+- MySQL 클라이언트 종료 시
+- MySQL 서비스가 재시작될 떄
+
+## 테이블 삭제
+```sql
+DROP TABLE 테이블명;
+
+-- 여러 테이블 동시에 삭제 가능
+DROP TABLE 테이블1, 테이블2, ...;
+```
+- 외래 키 제약 조건의 기준 테이블은 바로 삭제할수 없고, 먼저 외래 키가 생성된 외래 키 테이블을 삭제해야 삭제 할 수 있다.
+
+## 테이블 수정 
+이미 생성된 테이블의 추가/변경/삭제는 `ALTER TABLE` 구문을 사용한다.
+
+### 컬럼 추가
+```sql
+ALTER TABLE member ADD nickname VARCHAR(20) DEFAULT 'member' NULL;
+```
+SQL문의 맨 뒤에 `FIRST` 또는 `AFTER 컬럼명`을 사용하여 컬럼이 추가될 위치를 지정할 수 있다.
+- `FIRST` : 테이블의 맨 앞에 컬럼이 추가된다.
+- `AFTER 컬럼명` : 해당 컬럼의 다음에 컬럼이 추가된다.
+
+### 컬럼 삭제
+```sql
+ALTER TABLE member DROP COLUMN nickname;
+```
+
+### 컬럼 이름 및 데이터 타입 변경
+```sql
+/*
+member 테이블의 name 컬럼의 이름을 mName으로,
+데이터 타입을 VARCHAR(20), NULL 값 허용으로 변경한다.
+*/
+ALTER TABLE member CHANGE COLUMN name mName VARCHAR(20) NULL;
+```
+
+### 컬럼의 제약 조건 삭제
+```sql
+ALTER TABLE member DROP PRIMARY KEY;
+ALTER TABLE order DROP FOREIGN KEY FK_member_order;
+```
