@@ -1535,3 +1535,84 @@ ALTER TABLE member CHANGE COLUMN name mName VARCHAR(20) NULL;
 ALTER TABLE member DROP PRIMARY KEY;
 ALTER TABLE order DROP FOREIGN KEY FK_member_order;
 ```
+## 뷰(View)
+뷰는 SELECT 문의 결과로 만들어지는 가상 테이블이다.
+
+### 뷰의 장점
+- 보안 : 원 테이블에는 접근할 수 없도록 제한하고, 필요한 내용만 뷰로 만들어서 뷰에만 접근 권한을 준다.
+- 복잡한 쿼리를 단순화 : 복잡한 쿼리문을 뷰로 만들어서 간편하게 조회할 수 있다.
+
+### 뷰 생성 : CREATE VIEW
+```sql
+-- 뷰 생성
+CREATE view v_userbuytbl
+AS
+	SELECT u.userid AS 'USER ID', u.name AS 'USER NAME', b.prodName AS 'PRODUCT NAME', u.addr, concat(u.mobile1, u.mobile2) AS 'MOBILE PHONE'
+    FROM usertbl u INNER JOIN buytbl b ON u.userid = b.userid;
+
+-- 뷰 조회 : 일반 테이블과 똑같이 조회하면 된다.
+SELECT `user id`, `user name` FROM v_usertbl; -- 띄어쓰기 때문에 `` 사용
+```    
+
+### 뷰 수정 : ALTER VIEW
+```sql
+ALTER VIEW v_userbuytbl
+AS 
+	SELECT u.userid AS '사용자 아이디', u.name AS '사용자 이름', b.prodName AS '제품 이름', u.addr, concat(u.mobile1, u.mobile2) AS '전화 번호'
+    FROM usertbl u INNER JOIN buytbl b ON u.userid = b.userid;
+```
+
+### 뷰 덮어쓰기 : CREATE OR REPLACE
+CREATE VIEW는 기존에 뷰가 있으면 오류가 발생하지만, CREATE OR REPLACE VIEW를 사용하면 기존에 뷰가 있어도 덮어쓰기 때문에 오류가 발생하지 않는다.
+
+DROP VIEW와 CREATE VIEW를 연속으로 사용한 효과
+
+```sql
+CREATE OR REPLACE view v_usertbl
+AS
+	SELECT userid, name, addr FROM usertbl;
+```
+
+### 뷰를 통한 데이터 삽입/수정/삭제 가능
+기본적으로 뷰는 읽기 전용으로 사용하는 것이 좋지만, 뷰의 데이터를 변경할 수 있으며 원 테이블의 데이터가 함께 변경된다. 
+
+예외적으로 뷰를 통해 데이터의 수정이나 삭제를 할 수 없는 경우는 다음과 같다.
+- 집계 함수를 사용한 뷰
+- UNION ALL, JOIN 등을 사용한 뷰
+- DISTINCT, GROUP BY 등을 사용한 뷰
+
+뷰를 통해 데이터를 삽입할 때, 원테이블에 NOT NULL로 설정된 열이 뷰에는 없는 경우 해당 컬럼이 DEFAULT가 지정되어 있어야 정상적으로 데이터를 삽입할 수 있다.
+```sql
+-- 뷰를 통한 데이터 삽입
+INSERT INTO v_usertbl VALUES('PHS', '박효신', '서울');
+
+-- 뷰를 통한 데이터 수정
+UPDATE v_usertbl SET addr = '부산' WHERE userid='JKW';
+
+-- 뷰를 통한 데이터 삭제
+DELETE FROM v_usertbl WHERE userid='JKW';
+```
+
+### 뷰 조건에 맞는 데이터만 삽입하기 : WITH CHECK OPTION
+예를 들어 아래와 같이 사용자 중 키가 170 이상인 사람들을 대상으로 뷰를 만든다고 가정해보자.
+```sql
+CREATE VIEW v_height170
+AS 
+	SELECT * FROM usertbl WHERE height >= 170;
+```
+여기서 뷰의 조건에 맞지 않는 키가 158인 데이터를 뷰를 통해 삽입하면 어떻게 될까?
+```sql
+INSERT INTO v_height170 VALUES('KBM', '김병만', 1977, '경기', '010', '5555555', 158, '2021-10-10');
+```
+정상적으로 데이터가 삽입은 되지만 뷰에선 조회되지 않고, 원테이블을 조회하면 해당 데이터를 볼 수 있다.  
+이와 같은 경우 뷰에 조건에 맞는 데이터만 뷰를 통해 삽입하고 싶다면, WITH CHECK OPTION문을 사용하면 된다.
+```sql
+CREATE VIEW v_height170
+AS 
+	SELECT * FROM usertbl WHERE height >= 170 WITH CHECK OPTION;
+```
+
+### 뷰 삭제 : DROP VIEW
+```sql
+DROP VIEW v_usertbl;
+```
