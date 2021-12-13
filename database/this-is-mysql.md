@@ -1616,3 +1616,30 @@ AS
 ```sql
 DROP VIEW v_usertbl;
 ```
+
+## 테이블 스페이스
+데이터베이스가 테이블이 저장되는 논리적인 공간이라면, 테이블 스페이스는 테이블이 실제로 저장되는 물리적인 공간이다.  
+대용량의 데이터를 다룰 떄는 성능 향상을 위해 테이블스페이스에 대한 설정을 하는 것이 좋다.  
+따로 테이블 스페이스를 지정하지 않으면 시스템 테이블스페이스에 테이블이 저장되며, 시스템 테이블 스페이스에 대한 정보는 시스템 변수 innodb_data_file_path에 저장되어 있다.
+
+```sql
+-- 결과 : 파일명:파일크기:최대파일크기
+SHOW VARIABLES LIKE 'innodb_data_file_path';
+```
+
+각 테이블을 별도의 테이블 스페이스에 저장하려면 시스템 변수 inno_db_file_per_table가 ON 으로 설정되어 있어야한다(MySQL 8.0에서는 디폴트 값이 ON)
+
+```sql
+-- 해당 변수가 ON 이어야 테이블을 별도의 테이블 스페이스에 저장 가능
+SHOW VARIABLES LIKE 'innodb_file_per_table';
+
+-- 테이블 스페이스 생성, 테이블 스페이스의 확장자는 idb이어야 한다.
+CREATE TABLESPACE ts_a ADD DATAFILE 'ts_a.ibd';
+CREATE TABLESPACE ts_b ADD DATAFILE 'ts_b.ibd';
+
+-- 테이블 생성시 테이블 스페이스 지정
+CREATE TABLE member(id INT, name VARCHAR(10)) TABLESPACE ts_a;
+
+-- ALTER 문으로 테이믈 스페이스 변경 가능
+ALTER TABLE member TABLESPACE ts_b;
+```
