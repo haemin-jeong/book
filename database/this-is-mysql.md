@@ -1399,6 +1399,15 @@ SET foreign_key_checks = 0 -- 외래 키 제약 조건 검사 비활성화
 SET foreign_key_checks = 1 -- 외래 키 제약 조건 검사 홯성화
 ```
 
+생성된 외래키 조회
+- information_schema 데이터베이스의 referntial_constraints 테이블을 조회하면 생성된 외래키들을 조회할 수 있다.
+```sql
+-- sqldb 데이터베이스에서 외래 키가 있는 테이블의 이름과 외래 키 이름 조회
+SELECT table_name, constraint_name
+	FROM information_schema.referential_constraints
+	WHERE constraint_schema = 'sqldb';
+```
+
 ### UNIQUE 제약 조건
 - **UNIQUE 제약 조건은 NULL 값은 허용하지만 중복되지 않는 유일한 값을 입력해야 한다는 조건이다.**
 
@@ -1775,3 +1784,4 @@ SELECT * FROM member WHERE name = '김이름';
 - 클러스터형 인덱스로 지정할 열의 자릿수가 크다면 보조 인덱스에 저장되어야할 양도 증가한다. 주의하자.
 
 **인덱스를 생성하기 위한 일차 조건은 WHERE 절에 해당 인덱스를 생성한 열의 이름을 사용하는 것이다. 하지만 WHERE 절에 해당 인덱스를 생성한 열의 이름을 사용해도 인덱스를 사용하지 않는 경우도 많다.**
+
