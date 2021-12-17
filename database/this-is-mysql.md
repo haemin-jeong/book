@@ -1785,3 +1785,98 @@ SELECT * FROM member WHERE name = '김이름';
 
 **인덱스를 생성하기 위한 일차 조건은 WHERE 절에 해당 인덱스를 생성한 열의 이름을 사용하는 것이다. 하지만 WHERE 절에 해당 인덱스를 생성한 열의 이름을 사용해도 인덱스를 사용하지 않는 경우도 많다.**
 
+## 인덱스 생성/변경/삭제
+
+### 인덱스 생성 - CREATE INDEX
+```sql
+-- 문법
+CREATE [UNIQUE | FULLTEXT | SPATIAL] INDEX index_name
+	[index_type]
+	ON tbl_name (key_part, ...)
+	[index_option]
+	[algorithm_option | lock_option] ...
+
+	key_part:
+		{col_name [(length)] | (expr)} [ASC | DESC]
+	
+	index_option:
+		KEY_BLCK_SIZE [=] value
+		| index_type
+		| WITH PARSER parser_name
+		| COMMENT 'string'
+		| {VISIBLE | INVISIBLE}
+
+	index_type:
+		USING {BTREE | HASH}
+
+	algorithm_option:
+		ALGORITHM [=] {DEFAULT | INPLACE | COPY}
+
+	lock_option:
+		LOCK [=] {DEFAULT | NONE | SHARED | EXCLUSIVE}
+
+```
+- CREATE FULLTEXT INDEX 문은 전체 텍스트 인덱스를 만든다.
+- CREATE SPATIAL INDEX 문은 점, 선, 면 등의 공간 데이터와 관련된 인덱스를 만든다.
+- CREATE INDEX문으로 Primary Key로 생성되는 클러스터형 인덱스를 만들 수 없다. 클러스터형 인덱스를 생성하려면 ALTER TABLE 문을 사용해야 한다.
+- UNIQUE로 지정된 인덱스는 동일한 데이터 값이 입력될 수 없다.(디폴트 값은 UNIQUE X)
+- CREATE INDEX 문으로 생성되는 인덱스는 보조 인덱스이다.
+- ASC(디폴트 값), DESC는 인덱스가 정렬되는 방식이다.
+- index_type을 생략하면 B-TREE 형식을 사용한다.
+
+### 인덱스 제거 - DROP INDEX
+```sql
+-- 문법
+DROP INDEX index_name ON tbl_name
+	[algorithm_option | lock_option] ...
+
+algorithm_option:
+	ALGORITHM [=] {DEFAULT | INPLACE | COPY}
+
+lock_option:
+	LOCK [=] {DEFAULT | NONE | SHARED | EXCLUSIVE}
+```
+- 기본 키로 설정된 클러스터형 인덱스의 이름은 항상 'PRIMARY'로 되어있기 때문에 인덱스의 이름 부분에 PRIMARY를 써주거나, ALTER TABLE 문으로 기본키를 제거하여 클러스터형 인덱스를 삭제할 수 있다.
+- 인덱스를 모두 제거할 때는 보조 인덱스부터 삭제하는 것이 좋다. 보조 인덱스의 리프 페이지들의 값은 클러스터형 인덱스의 키 값을 저장하고 있는데 클러스터형 인덱스가 삭제되면 다시 '페이지 번호 + #오프셋'으로 값이 모두 재구성 된다. 만약 클러스터형 인덱스부터 삭제한다면 불필요한 보조 인덱스 재구성 작업까지 하게 되는 것이다.
+- 활용도가 떨어지는 인덱스는 삭제하자. 전반적인 MySQL 성능 저하를 발생시킬 수 있다.
+
+인덱스 관련 예시 코드
+```sql
+-- 인덱스 조회
+SHOW INDEX FROM usertbl;
+
+/*
+인덱스 크기 확인
+(최소 단위가 1페이지이고, 1페이지가 16KB이기 때문에 최소 16KB이다)
+- Data_length : 클러스터형 인덱스(또는 데이터)의 크기
+- Index_length :  보조 인덱스의 크기
+*/
+SHOW TABLE STATUS LIKE 'usertbl';
+
+-- 보조 인덱스 생성
+CREATE INDEX idx_usertbl_name ON usertbl (name);
+
+-- 인덱스를 생성 후 실제 적용시키려면 ANALYZE TABLE문으로 먼저 테이블을 분석/처리해줘야 한다.
+ANALYZE TABLE usertbl;
+
+-- 두개의 열을 조합하여 인덱스 생성 예 
+CREATE INDEX idx_usertbl_name_birthYear 
+	ON usertbl (name, birthYear);
+
+-- idx_usertbl_name_birthYear 인덱스로 설정한 두 열이 조합된 조건문의 쿼리를 실행하여 MySQL Workbench에서 실행 계획을 확인해보면 해당 인덱스가 사용된 것을 볼 수 있다.
+SELECT * FROM usertbl WHERE name = '윤종신' AND birthYear = '1969';
+
+-- name 인덱스와 name+birthYear 인덱스 두개가 있으면 아래와 같이 name만 사용하여 조회하는 경우엔 name 인덱스를 사용한다.
+-- -> MySQL이 알아서 효율적인 인덱스를 선택해준다.
+SELECT * FROM usertbl WHERE name = '윤종신';
+
+-- 인덱스 삭제
+DROP INDEX idx_usertbl_name ON usertbl;
+
+-- ALTER TABLE 문을 사용하여 인덱스 삭제
+ALTER TABLE usertbl DROP INDEX idx_usertbl_name;
+
+-- 클러스터형 인덱스 삭제
+ALTER TABLE usretbl DROP PRIMARY KEY;
+```
+
