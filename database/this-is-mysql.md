@@ -1851,7 +1851,11 @@ SHOW INDEX FROM usertbl;
 - Data_length : 클러스터형 인덱스(또는 데이터)의 크기
 - Index_length :  보조 인덱스의 크기
 */
+-- usertbl 테이블 인덱스 크기 확인
 SHOW TABLE STATUS LIKE 'usertbl';
+
+-- 현재 데이터베이스에 있는 테이블들의 인덱스 크기 확인
+SHOW TABLE STATUS;
 
 -- 보조 인덱스 생성
 CREATE INDEX idx_usertbl_name ON usertbl (name);
@@ -1879,4 +1883,50 @@ ALTER TABLE usertbl DROP INDEX idx_usertbl_name;
 -- 클러스터형 인덱스 삭제
 ALTER TABLE usretbl DROP PRIMARY KEY;
 ```
+## 인덱스 성능 비교
+
+만약 member 테이블의 primary key인 id의 최대 값이 49999인데 아래와 같이 where 조건에 id가 500000 이하인 경우를 조회하는 쿼리를 실행한다고 가정해보자
+```sql
+-- 사실상 전체 범위 조회지만 인덱스를 사용하여 조회
+SELECT * FROM member WHERE id <= 500000;
+```
+이 경우 사실상 테이블 전체를 가져오는 것과 같기 때문에 풀 테이블 스캔을 하는 것이 Data Read 양이 더 줄어들고 효율적일 것 같지만 WHERE 조건에 id가 있기 때문에 Index Range Scan을 수행한다.
+
+주의 : 전체적인 효율은 시스템의 다양한 상황이나 데이터 분포 등에 영향을 받을 수 있기 때문에 읽은 양이 적다고 반드시 효율적인 것은 아니다.
+
+인덱스 힌트를 사용해서 인덱스를 강제로 사용하거나 사용하지 않도록 할 수 있다.
+- IGNORE INDEX (인덱스명) : 강제로 해당 인덱스를 사용하지 않도록 한다.
+- USE INDEX(인덱스명) : 강제로 해당 인덱스를 사용하도록 한다.  
+
+인덱스 힌트는 이 두가지 정도만 알고 있으면 된다.
+```sql
+-- 인덱스를 사용하지 않도록하여 풀 테이블 스캔한다.
+SELECT * FROM member IGNORE INDEX(PRIMARY) WHERE id < 5000000;
+```
+
+응용프로그램이 주로 전체 데이터의 15% 이상의 범위의 데이터를 검색하는 경우에는 인덱스를 만들지 않는 것이 시스템 성능에 도움이 된다. -> 만약 많은 양의 데이터를 보조 인덱스를 사용하여 검색하면 그만큼 인덱스와 데이터 페이지 사이를 왔다갔다 해야하기 때문에
+
+불필요한 보조 인덱스는 데이터의 변경 작업(특히 INSERT) 시에 시스템 성능을 나쁘게 만들 수 있다.
+
+**WHERE 문에서 인덱스가 있는 열에 함수나 연산을 사용하는 것을 주의하자**  
+```sql
+-- 인덱스 사용
+SELECT * FROM member WHERE id = 100000;
+
+-- 인덱스 미사용
+SELECT * FROM member WHERE id*1 = 100000;
+```
+최근 버전에서는 어떤 경우에는 열 이름에 함수가 적용되어도 인덱스를 사용하기도 하지만, 그렇지 않은 경우도 많기 때문에 최대한 WHERE 절에 나오는 열 이름에는 아무런 가공을 하지 않도록 하자.
+
+참고 : MySQL Workbench의 실행 계획에서 Key Lookup은 인덱스에서 검색된 RID(Row ID, 각 행의 고유번호)를 가지고 실제 데이터 페이지의 데이터로 찾아가는 과정을 뜻한다.(클러스터형 인덱스는 리프 페이지가 곧 데이터 페이지이기 때문에 Key Lookup 용어를 사용하지 않는다.)
+
+데이터 중복도
+- 데이터 중복도란 데이터의 종류가 얼마나 분포되어 있는가를 말한다. 
+- 다른 용어로 Cardinality(원소 개수) 로도 사용된다. 
+- 예로 Gender 값의 경우 남자, 여자 두가지 뿐이기 때문에 Cardinality가 상당히 낮은 것이다. 
+- Cardinality가 높다는 것은 데이터의 종류가 넓게 분포되어 있다는 것이다. 
+- Primary Key, Unique는 데이터가 중복되지 않으므로 Cardinality가 높다.
+
+데이터 중복도가 낮은 경우 인덱스를 사용하여 조회하는 것이 효율성이 없는 것은 아니지만, 인덱스 관리 비용과 INSERT 등의 데이터 변경 구문에서는 성능이 저하될 수 있기 때문에 데이터 중복도가 낮은 경우 인덱스를 사용하는 것은 좋지 않다.
+
 
