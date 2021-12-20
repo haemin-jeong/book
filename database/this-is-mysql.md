@@ -40,7 +40,7 @@
 
 지역이 '경남', '전남', '경북'인 사람의 정보를 조회
 
-`select * from usertbl where height between 180 and 183;`
+`select * from usertbl where addr IN ('경남', '전남', '경북');`
 
 ### 문자열 검색 : like
 
