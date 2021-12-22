@@ -1,15 +1,15 @@
-## Ch 04. 테이터베이스 모델링
+# Ch 04. 테이터베이스 모델링
 
 데이터베이스 모델링이란 현실 세계의 작업, 사물들을 DBMS의 데이터베이스 테이블로 옮기는 과정이다.
 
-### MySQL Workbench 모델링 툴 실습
+## MySQL Workbench 모델링 툴 실습
 
 - 다이어그램 작성 : Menu → File → New Model
 - 다이어그램 저장 : Menu → Save Model
 - 다이어그램 → 데이터베이스 테이블로 변환 : Menu → Database → Foward Engineer
 - 데이터베이스 → 다이어그램으로 변환 : Menu → Database → Reverse Engineer
 
-## Ch 06. SQL 기본
+# Ch 06. SQL 기본
 
 `show table status` : 테이블의 정보 조회
 
@@ -30,19 +30,19 @@
 
 그래서 char(10)을 사용하면 영문, 한글 구분없이 10글자까지 입력할 수 있다.
 
-### between A and B
+## between A and B
 
 키가 180~183인 사람을 조회
 
 `select * from usertbl where height between 180 and 183;`
 
-### in()
+## in()
 
 지역이 '경남', '전남', '경북'인 사람의 정보를 조회
 
 `select * from usertbl where addr IN ('경남', '전남', '경북');`
 
-### 문자열 검색 : like
+## 문자열 검색 : like
 
 이름이 김으로 시작하는 사람 조회
 
@@ -55,7 +55,7 @@
 
 %, _ 가 검색할 문자열의 제일 앞에 들어가면 MySQL 성능에 악영향을 끼치게된다. 예를 들어 name 열을 '%용' 등으로 검색하면, name 열에 인덱스가 있더라도 인덱스를 사용하지 않고 전체 데이터를 검색한다.
 
-### ANY/ALL/SOME 그리고 서브쿼리
+## ANY/ALL/SOME 그리고 서브쿼리
 
 ```sql
 select name, height from usertbl where height >= any(select height from usertbl where addr = '경남');
@@ -69,7 +69,7 @@ select name, height from usertbl where height = any(select height from usertbl w
 - all : 서브쿼리의 여러 개의 결가를 모두 만족해야함.
 - `= any(서브쿼리)` == `in(서브쿼리)`
 
-### ORDER BY
+## ORDER BY
 
 ```sql
 select name, height from usertbl order by name asc, height desc;
@@ -80,13 +80,13 @@ select name, height from usertbl order by name, height desc;
 - order by 절은 select, from, where, group by, having 중에서 제일 뒤에 와야한다.
 - **order by 절은 MySQL 의 성능에 상당한 영향을 줄 수 있기 때문에, 꼭 필요한 경우가 아니라면 사용하지 말자.**
 
-### DISTINCT - 중복 제거
+## DISTINCT - 중복 제거
 
 ```sql
 select distinct from usertbl;
 ```
 
-### LIMIT - 출력 개수 제한
+## LIMIT - 출력 개수 제한
 
 ```sql
 select * from userTbl limit 5;
@@ -96,7 +96,7 @@ select * from userTbl limit 0, 5;
 select * from userTbl limit 5 offset 0;
 ```
 
-### CREATE TABLE ... SELECT - 테이블 복사
+## CREATE TABLE ... SELECT - 테이블 복사
 
 - PK, FK 등의 제약조건은 복사되지 않는다.
 
@@ -107,9 +107,9 @@ create table member_copy (select * from member);
 create table member_name (select name from member);
 ```
 
-### GROUP BY, HAVING, 집계함수
+## GROUP BY, HAVING, 집계함수
 
-#### 집계 함수
+### 집계 함수
 
 - 집계함수는 주로 group by 절과 함께 쓰이며 데이터를 그룹핑 해준다.
 
@@ -134,7 +134,7 @@ select name, height from usertbl where height = (select max(height) from usertbl
 - stdev() : 표준편차
 - var_samp() : 분산
 
-#### Having 절
+### Having 절
 
 - 집계 함수의 조건을 지정한다.
 - **having 절은 group by 절 뒤에 와야한다.**
@@ -147,7 +147,7 @@ select userID as '사용자', sum(price*amount) as '총 구매액'
 	order by sum(price*amount);
 ```
 
-#### ROLLUP
+### ROLLUP
 
 - 분류 별로 합계 및 총 합계를 구하고 싶다면 WITH ROLLUP 문을 사용하면 된다.
 
@@ -165,7 +165,7 @@ select groupName, sum(price*amount) as '비용'
 	with rollup;
 ```
 
-### SQL의 분류
+## SQL의 분류
 
 ### DML(Data Manipulation Language)
 
