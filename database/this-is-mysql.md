@@ -2092,4 +2092,59 @@ CALL nameProc('userTBL');
 
  #### 보안 강화
  뷰와 같이 사용자 별로 테이블에 접근 권한을 주지 않고, 스토어드 프로시저에만 접근 권한을 줌으로써 보안을 강화할 수 있다.
- 
+
+ ## 스토어드 함수
+사용자가 직접 만들어서 사용하는 함수를 스토어드 함수라고 하며, 스토어드 프로시저와 유사하지만 형태와 사용 용도가 약간 다르다.
+
+스토어드 프로시저는 여러 SQL 문을 묶거나 계산 등 다양한 용도로 사용되지만, 스토어드 함수는 어떤 계산을 통해 하나의 값을 반환하는데 사용된다.
+
+```sql
+-- 스토어드 함수 형식
+DELIMITER $$
+CREATE FUNCTION 스토어드_함수이름( 파라미터 )
+    RETURNS 반환_데이터_타입
+BEGIN
+    ...
+END $$
+DELIMITER ;
+
+SELECT 스토어드_함수이름();
+```
+
+- 스토어드 함수의 파라미터는 모두 입력 파라미터로 사용된다.
+- 스토어드 함수는 RETURNS 문으로 반환 값의 타입을 지정하고, 본문 안에서 RETURN 문으로 하나의 값을 반환한다.(스토어드 프로시저는 OUT을 사용하여 여러 개의 값 반환 가능)
+- 스토어드 함수는 SELECT 문 안에서 호출된다.(스토어드 프로시저는 CALL로 호출)
+- 스토어드 프로시저 내에서는 SELECT 문을 사용할 수 있지만, 스토어드 함수 내에서는 집합 결과를 반환하는 SELECT를 사용할 수 없다.(SELECT ... INTO 는 결과를 반환하는 것이 아니기 때문에 예외적으로 사용 가능)
+
+```sql
+-- 스토어드 함수를 사용하려면 스토어드 함수 생성 권한을 줘야한다.
+SET GLOBAL log_bin_trust_function_creators = 1;
+
+-- 나이 계산 스토어드 함수
+DROP FUNCTION IF EXISTS getAgeFunc;
+DELIMITER $$
+CREATE FUNCTION getAgeFunc(bYear INT)
+	RETURNS INT
+BEGIN
+	DECLARE age INT;
+    SET age = YEAR(CURDATE()) - bYear;
+    RETURN AGE;
+END $$
+DELIMITER ;
+
+SELECT getAgeFunc(1995);
+
+-- 함수의 반환 값을 SELECT ... INTO문으로 저장했다가 사용할 수도 있다.
+SELECT getAgeFunc(1995) INTO @age1990;
+
+SELECT CONCAT('1995년 생의 나이: ', @age1990);
+
+-- 함수는 주로 테이블을 조회할 때 활용 된다.
+SELECT id, name, getAgeFunc(birthYear) AS '만 나이' FROM member;
+
+-- 현재 저장된 스토어드 함수의 이름 및 내용 조회
+SHOW CREATE FUNCTION 함수명;
+
+-- 스토어드 함수 삭제
+DROP FUNCTION 함수명;
+```
