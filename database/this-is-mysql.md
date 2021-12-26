@@ -1950,4 +1950,146 @@ SELECT * FROM member WHERE id*1 = 100000;
 	- OPTIMIZE TABLE : 테이블 데이터 및 관련 인덱스 데이터의 물리적 스토리지를 재구성하여 테이블에 액세스할 때 스토리지 공간을 줄이고 I/O 효율성을 향상시킨다.
 	- ANALYZE TABLE : 인덱스를 재생성하여 성능을 최적화, 키를 재분배
 
+# 스토어드 프로그램
+스토어드 프로그램이란 MySQL에서 프로그래밍 언어와 같은 기능을 제공하는 것을 통틀어 말하는 것이다. 스토어드 프로그램은 크게 스토어드 프로시저, 스토어드 함수, 트리거, 커서 등이 있다.
 
+스토어드 프로그램은 쿼리를 묶어주는 것뿐 나이라, 프로그래밍 기능을 제공하고 시스템 성능 향상에 도움을 줄 수 있기 때문에 실제 현업에서도 쿼리의 대부분을 스토어드 프로그램을 만들어서 사용한다.
+
+## 스토어드 프로시저
+스토어드 프로시저는 쿼리 문의 집합으로 어떠한 동작을 일괄 처리하기 위한 용도로 사용된다. 자주 사용하는 쿼리를 모듈화 시켜서 필요할 때마다 호출하여 사용하면 훨씬 편리하게 MySQL을 운영할 수 있다.
+
+스토어드 프로시저도 데이터베이스의 개체 중 하나로, 테이블처럼 각 데이터베이스 내부에 저장된다.
+
+```sql
+-- 스토어드 프로시저 형식
+DELIMITER $$
+CREATE PROCEDURE 스토어드_프로시저이름(IN 또는 OUT 파라미터)
+BEGIN
+	...
+END $$
+DELIMITER ;
+
+CALL 스토어드_프로시저이름();
+```
+참고 : DELIMITER $$ ~ END $$는 스토어드 프로시저를 묶어주는 부분으로, MySQL에서 기본 종료문자는 ;인데 프로시저 내에서도 ;을 종료 문자로 사용하면 어디까지가 프로시저인지 구별하기 어렵다. 그래서 종료 문자를 일시적으로 변경하여 사용한다.
+
+### 스토어드 프로시저 변경과 삭제
+- ALTER PROCEDURE, ALTER FUNCTION 문으로 스토어드 프로시저나 스토어드 함수의 내용은 변경할 수 없다. 내용을 바꾸려면 DROP후 CREATE해야 한다.
+- DROP PROCEDURE 문을 사용하여 스토어드 프로시저를 삭제할 수 있다.
+
+### 매개변수의 사용
+
+#### 입력 매개변수 
+입력 매개변수를 지정하는 방법은 다음과 같다.
+```sql
+IN 입력_매개변수_이름 데이터_형식
+```
+입력 매개변수가 있는 스토어드 프로시저의 실행 방법은 다음과 같다.
+```sql
+CALL 스토어드_프로시저이름(전달 값);
+```
+```sql
+-- 입력 매개변수가 있는 프로시저의 예
+DROP PROCEDURE IF EXISTS memberProc;
+DELIMITER $$
+CREATE PROCEDURE memberProc(
+	IN memberBirthYear INT,
+    IN membrerHeight INT
+)
+BEGIN
+	SELECT * FROM member WHERE birthYear > memberBirthYear AND height > memberHeight;
+END $$
+DELIMITER ;
+
+CALL memberProc(1995, 182);
+```
+
+#### 출력 매개변수
+출력 매개변수를 지정하는 방법은 다음과 같다.
+```sql
+OUT 출력_매개변수_이름 데이터_형식
+```
+`SELECT ... INTO`문을 사용하여 출력 매개변수에 값을 대입한다.  
+출력 매개변수가 있는 스토어드 프로시저의 실행 방법은 다음고 같다.
+```sql
+CALL 프로시저_이름(@변수명);
+SELECT @변수명;
+```
+```sql
+-- 출력 매개변수 예
+DROP PROCEDURE IF EXISTS myProc;
+DELIMITER $$
+CREATE PROCEDURE myProc(
+	IN memberName CHAR(10),
+    OUT createdMemberId INT
+)
+BEGIN
+	INSERT INTO member VALUES(NULL, memberName);
+    SELECT MAX(id) INTO createMemberId FROM member;
+END $$
+DELIMITER ;
+
+CALL myProc('김김김', @memberId);
+SELECT CONCAT('현재 입력된 ID 값 ==>', @memberId);
+```
+
+### 스토어드 프로시저 프로그래밍
+IF..ELSE, CASE문, 반복문과 같은 SQL 프로그래밍 기능의 대부분을 프로시저에서 사용할 수 있다.
+
+### 기타 프로시저 관련 
+#### 저장된 프로시저의 이름 및 내용 조회
+```sql
+/*
+프로시저의 이름 및 내용 조회
+- routine_name : 이름
+- routine_definition : 내용
+*/
+SELECT routine_name, routine_definition FROM INFORMATION_SCHEMA.ROUTINES WHERE routine_schema = 'sqldb' AND routine_type = 'PROCEDURE';
+
+-- SHOW CREATE PROCEDURE 문으로도 스토어드 프로시저의 내용을 조회할 수 있다.
+SHOW CREATE PROCEDURE sqldb.userProc;
+
+/*
+프로시저 파라미터 조회
+- parameter_mode : IN or OUT
+- parameter_name : 파라미터명 
+- dtd_identifier : 데이터 타입
+*/
+SELECT parameter_mode, parameter_name, dtd_identifier FROM INFORMATION_SCHEMA.PARAMETERS WHERE specific_name = 'userProc';
+```
+
+#### 테이블 이름을 파라미터로 전달하는 방법
+ - FROM 절 테이블 이름에 일반적인 입력 매개변수를 사용하는 방법으로 사용하면 오류가 발생한다. 즉, MySQL에서 직접 테이블 이름을 파라미터로 사용할 수 없다.
+ 동적 SQL을 사용하여 입력 매개변수를 테이블 이름으로 사용할 수 있다.
+ ```sql
+ DROP PROCEDURE IF EXISTS nameProc;
+DELIMITER $$
+CREATE PROCEDURE nameProc(
+	IN tblName VARCHAR(20)
+)
+BEGIN
+	SET @sqlQuery = CONCAT('SELECT * FROM ', tblname);
+    PREPARE myQuery FROM @sqlQuery;
+    EXECUTE myQuery;
+    DEALLOCATE PREPARE myQuery;
+END $$
+DELIMITER ;
+
+CALL nameProc('userTBL');
+ ```
+ 
+ ### 스토어드 프로시저의 특징
+ #### MySQL 성능의 향상
+ 많은 양의 코드로 구현된 쿼리를 실행하면 클라이언트에서 서버로 쿼리의 모든 텍스트가 전송되는데, 이 많은 양의 코드를 서버에서 스토어드 프로시저로 생성해 놓으면 단지 스토어드 프로시저 이름과 매개변수 등 몇 글자의 텍스트만 전송하면 되기 때문에 네트워크 부하를 어느 정도 줄일 수 있고, 결과적으로 MySQL의 성능을 향상시킨다.
+
+ 참고: 다른 DBMS에서는 스토어 프로시저가 최초 호출 되었을때 때 한번 컴파일되어 메모리에 로딩되고 이후 호출부터는 메모리에 있는 것이 호출되어 상당한 성능 향상이 있다. 이와 달리 MySQL의 스토어드 프로시저는 호출될 떄마다 컴파일이 되기 때문에 다른 DBMS에 비해 성능 향상은 미미하지만 네트워크의 부하를 줄이는 등 효과가 있기 때문에 어느 정도 성능 향상이 있다고 볼 수 있다.
+
+ #### 유지관리의 간편함
+ 응용 프로그램에서 직접 SQL을 작성하지 않고 스토어드 프로시저를 호출함으로써, 데이터베이스에서 관련된 스토어드 프로시저의 내용을 일관되게 작업을 할 수 있다.
+
+ #### 모듈식 프로그래밍
+ 스토어드 프로시저르 한번 생성해 놓으면 언제든지 재사용 할 수 있고, 스토어드 프로시저에 사용된 쿼리의 변경 삭제가 수월해진다. 다른 모듈식 프로그래밍 언어와 동일한 장점을 가진다.
+
+ #### 보안 강화
+ 뷰와 같이 사용자 별로 테이블에 접근 권한을 주지 않고, 스토어드 프로시저에만 접근 권한을 줌으로써 보안을 강화할 수 있다.
+ 
