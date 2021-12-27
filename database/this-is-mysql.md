@@ -2148,3 +2148,69 @@ SHOW CREATE FUNCTION 함수명;
 -- 스토어드 함수 삭제
 DROP FUNCTION 함수명;
 ```
+## 커서
+커서는 테이블에서 여러 개의 행을 쿼리한 후에, 쿼리의 결과인 행 집합을 한 행씩 처리하기 위한 방식이다.
+
+텍스트 파일을 처리하는 프로그래밍 과정을 생각해보자. 
+1. 파일을 연다(OPEN), 파일 포인터튼 BOF(Begin Of File)을 가리킨다.
+2. 현재 파일 포인터가 가리키는 데이터를 읽거나 쓰고, 파일 포인터는 자동으로 다음 행으로 이동한다.
+3. EOF(End Of File)까지 2번 과정을 반복한다.
+4. 파일을 닫는다.(CLOSE)
+
+커서는 파일 처리의 동작 방식과 비슷하게 동작한다.
+1. 커서의 선언(DECLARE CURSOR)
+2. 반복 조건 선언(DECLARE CONTINUE HANDLER) -> 더이상 읽은 행이 없을 경우 실행할 내용 설정
+3. 커서 열기(OPEN)
+4. LOOP ~ END LOOP문을 사용해 커서에서 데이터를 가져오고(FETCH) 데이터를 처리하는 과정을 반복 조건을 만족하는 동안 반복한다.
+5. 커서 닫기(CLOSE)
+
+커서의 대부분은 스토어드 프로시저 내에서 활용된다. 
+
+커서 예제 코드
+```sql
+-- 고객이 구매한 총액에 따라 고객 등급 열에 값을 입력하는 예제
+DROP PROCEDURE IF EXISTS gradeProc;
+DELIMITER $$
+CREATE PROCEDURE gradeProc()
+BEGIN
+    DECLARE id VARCHAR(10);
+    DECLARE hap BIGINT; 
+    DECLARE userGrade CHAR(5);
+    
+    DECLARE endOfRow BOOLEAN DEFAULT FALSE;
+    
+    DECLARE userCursor CURSOR FOR -- 1. 커서 선언
+        SELECT U.userid, sum(price*amount) 
+        FROM buyTbl B RIGHT OUTER JOIN userTbl U 
+        ON B.userid = U.userid 
+        GROUP BY U.userid, U.name;
+    
+    DECLARE CONTINUE HANDLER --  2. 반복 조건 선언
+        FOR NOT FOUND SET endOfRow = TRUE; -- 행의 끝이면 endOfRow 변수에 TRUE를 대입
+        
+    OPEN userCursor; -- 3. 커서 열기
+    
+    grade_loop: LOOP -- 4
+        FETCH userCursor INTO id, hap;  -- 커서에서 데이터 가져오기
+        IF endOfRow THEN -- 더이상 읽을 행이 없으면 Loop를 종료
+            LEAVE grade_loop;
+        END IF;
+        
+        CASE
+            WHEN (hap >= 1500) THEN SET userGrade = '최우수고객';
+            WHEN (hap >= 1000) THEN SET userGrade = '우수고객';
+            WHEN (hap >= 1) THEN SET userGrade = '일반고객';
+            ELSE SET userGrade = '유령고객';
+        END CASE;
+        
+        UPDATE userTbl SET grade = userGrade WHERE userID = id;
+    END LOOP grade_loop;
+    
+    CLOSE userCursor; -- 5. 커서 닫기
+END $$
+DELIMITER ;
+
+CALL gradeProc();
+
+SELECT * FROM userTBL;
+```
