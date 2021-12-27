@@ -2214,3 +2214,136 @@ CALL gradeProc();
 
 SELECT * FROM userTBL;
 ```
+
+## 트리거
+트리거란 테이블에 부착되어 해당 테이블에서 DML(INSERT, UPDATE, DELETE 등)의 이벤트가 발생했을 때 작동하는 데이터베이스 개체이다.
+
+참고 : 일부 DBMS에서는 View에 트리거를 부착할 수 있지만, MySQL에서는 View에 트리거를 부착할 수 없다.
+
+만약 어떤 테이블의 행을 실수로 삭제해버린 상황을 가정해보자. 이런 경우 테이블에서 삭제될 때 삭제한 내용을 다른 테이블에 저장하도록 트리거를 만들어 놓음으로써 문제를 해결할 수 있다.
+
+### 트리거의 종류
+- AFTER 트리거 : 테이블에 삽입, 수정, 삭제 작업이 일어난 후에 작동하는 트리거
+- BEFORE 트리거 : 테이블에 삽입, 수정, 삭제 작업이 일어나기 전에 작동하는 트리거
+
+### 트리거 생성
+```sql
+-- 트리거 생성 문법
+CREATE
+	[DEFINER = user]
+	TRIGGER trigger_name
+	trigger_time trigger_event
+	ON tbl_name FOR EACH ROW
+	[trigger_order]
+	trigger_body
+
+trigger_time: { BEFORE | AFTER}
+trigger_event: { INSERT | UPDATE | DELETE }
+
+/*
+테이블에 여러 트리거가 부착되어 있을때 어떤 트리고보다 먼저 또는 나중에 수행되도록 지정하는 것
+- FOLLOWS 트리거명 : 지정한 트리거 다음에 현재 트리거 실행
+- PRECEDES 트리거명 : 지정한 트리거 작동 이전에 현재 트리거 실행
+*/
+trigger_order: { FOLLOWS | PRECEDES } other_trigger_name
+```
+예를 들어 member 테이블의 행이 삭제되었을 때, 삭제된 내용을 백업 테이블에 저장하는 트리거는 다음과 같이 생성할 수 있다.
+```sql
+DELIMITER //
+CREATE TRIGGER backupMemberTrg
+	AFTER DELETE
+	ON member
+	FOR EACH ROW
+BEGIN
+	INSERT INTO backup_member (name, birthDate, address, deleteDate) VALUES (OLD.name, OLD.birthDate, OLD.address, CURDATE());
+END //
+DELIMITER ;
+```
+
+### 트리거 삭제
+```sql
+DROP TRIGGER trigger_name
+```
+
+참고로 트리거는 ALTER 문을 사용할 수 없다.
+
+### 트리거가 생성하는 임시 테이블 - NEW, OLD
+트리거에서 작업이 수행되면 임시로 사용되는 시스템 테이블 NEW, OLD 두개가 있다.
+
+NEW 테이블
+- 테이블에 INSERT/UPDATE 쿼리가 실행됐을 때, 입력/변경되는 새 값이 NEW 테이블에 가장 먼저 저장된 후에 NEW 테이블에 있는 값이 테이블에 입력/변경이 된다.
+- new 테이블을 조작하면 입력된 새로운 값을 다른 값으로 조작할 수 있다.
+
+OLD 테이블
+- 테이블에 DELETE/UPDATE 쿼리가 실행됐을 때, 삭제/변경 되기 전의 예전 값이 저장된다.
+
+### 생성된 트리거 확인
+SHOW TRIGGERS 문으로 데이터베이스 생성된 트리거를 확인할 수 있다.
+```sql
+SHOW TRIGGERS 데이터베이스명;
+```
+
+### 다중 트리거
+다중 트리거는 하나의 테이블에 동일한 트리거가 여러개 부착되어 있는 것을 말한다.
+
+예를 들어 어떤 테이블에 AFTER DELETE 트리거가 여러개 부착되어 있는 것을 말한다.
+
+트리거들의 순서를 정해야 한다면 앞서 살펴본 트리거의 생성 문법에서 trigger_order 옵션을 사용하여 순서를 지정해주면 된다.
+
+### 중첩 트리거
+중첩 트리거란 트리거 내에서 또 다른 트리거가 작동하도록 하는 것을 말한다.
+
+참고 : MySQL은 재귀 트리거는 지원하지 않는다. 다른 DBMS에서는 재귀 트리거를 지원하기도 한다.
+
+중첩 트리거의 예
+```sql
+-- 구매를 하면(INSERT order) 물품의 재고가 감소하고(UPDATE product), 물품의 재고가 감소하면 배송 테이블에 데이터를 추가(INSERT delivery)하는 중첩 트리거 사용 예제
+
+CREATE TABLE order -- 구매 테이블
+(
+	orderNo INT AUTO_INCREMENT PRIMARY KEY,
+    userID VARCHAR(5),
+    prodName VARCHAR(5),
+    orderamount INT
+);
+
+CREATE TABLE product -- 물품 테이블
+(
+	prodName VARCHAR(5),
+    account INT
+);
+
+CREATE TABLE delivery -- 배송 테이블
+(
+	deliverNo INT AUTO_INCREMENT PRIMARY KEY,
+    prodName VARCHAR(5),
+    account INT
+);
+
+-- 물품 테이블에서 개수를 감소시키는 트리거
+DROP TRIGGER IF EXISTS orderTrg;
+DELIMITER //
+CREATE TRIGGER orderTrg
+	AFTER INSERT
+    ON order
+    FOR EACH ROW
+BEGIN
+	UPDATE product SET account = account - NEW.orderAmount WHERE prodName = NEW.prodName;
+END //
+DELIMITER ;
+
+-- 배송 테이블에 새 배송건을 입력하는 트리거
+DROP TRIGGER IF EXISTS porductTrg;
+DELIMITER //
+CREATE TRIGGER productTrg
+	AFTER UPDATE
+    ON product
+    FOR EACH ROW
+BEGIN
+	DECLARE orderAmount INT;
+    -- 주문 개수 = (변경 전의 개수 - 변경 후의 개수)
+    SET orderAmount = OLD.account - NEW.account;
+    INSERT INTO delivery(prodName, account) VALUES (NEW.prodName, orderAmount);
+END //
+DELIMITER ;
+```
