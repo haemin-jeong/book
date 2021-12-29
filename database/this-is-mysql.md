@@ -184,6 +184,12 @@
 		- [생성된 트리거 확인](#생성된-트리거-확인)
 		- [다중 트리거](#다중-트리거)
 		- [중첩 트리거](#중첩-트리거)
+- [전체 텍스트 검색](#전체-텍스트-검색)
+	- [전체 텍스트 인덱스](#전체-텍스트-인덱스)
+		- [중지 단어](#중지-단어)
+	- [전체 택스트 검색 쿼리](#전체-택스트-검색-쿼리)
+		- [자연어 검색](#자연어-검색)
+		- [불린 모드 검색](#불린-모드-검색)
 # Ch 04. 테이터베이스 모델링
 
 데이터베이스 모델링이란 현실 세계의 작업, 사물들을 DBMS의 데이터베이스 테이블로 옮기는 과정이다.
@@ -2533,3 +2539,129 @@ BEGIN
 END //
 DELIMITER ;
 ```
+# 전체 텍스트 검색
+전체 텍스트 검색은 긴 문자로 구성된 구조화되지 않은 텍스트 데이터를 빠르게 조회하기 위한 MySQL의 부가 기능이다.
+
+신문 기사 테이블에서 특정 단어를 검색한다고 해보자.
+```sql
+-- 개발로 시작하는 신문 기사 내용 검색 -> 인덱스 사용
+SELECT * FROM newspaper WHERE content LIKE '개발%'
+
+-- 내용 중 개발이 포함된 신문 기사 검색 -> 인덱스가 사용X
+SELECT * FROM newspaper WHERE content LIKE '%개발%'
+```
+MySQL은 첫번째 쿼리는 인덱스를 사용해서 검색하지만, 두번째 쿼리는 인덱스를 사용하지 않고 검색을 한다.
+전체 텍스트 검색을 사용하면 첫 글자 뿐만 아니라, 중간의 단어나 문장으로도 인덱스를 생성해주기 때문에 위와 같은 상황에서도 인덱스를 사용해서 검색할 수 있다.
+## 전체 텍스트 인덱스
+전체 텍스트 인덱스는 전체 택스트 검색에서 사용되는 인덱스로, 텍스트 문자열 데이터의 내용으로 생성한 인덱스를 말한다.
+- 전체 텍스트 인덱스는 InnoDB와 MyISAM 테이블만 지원한다.
+- 전체 텍스트 인덱스는 char, varchar, text의 열에만 생성이 가능하다.
+- 인덱스 힌트의 사용이 일부 제한된다.
+- 여러 개 열에 FULLTEXT 인데스를 지정할 수 있다.
+
+전체 텍스트 인덱스 생성
+```sql
+-- 1. 테이블 생성 시 지정
+CREATE TABLE 테이블명 (
+ 	...
+	FULLTEXT 인덱스명 (열 이름)
+);
+
+-- 2. ALTER TABLE 문 사용
+ALTER TABLE 테이블명 ADD FULLTEXT(열 이름);
+
+-- 3. CREATE INDEX 문 사용
+CREATE FULLTEXT INDEX 인덱스명 ON 테이블명(열 이름);
+```
+
+전체 텍스트 인덱스 삭제
+```sql
+ALTER TABLE 테이블명 DROP INDEX FULLTEXT(열 이름);
+```
+
+전체 택스트 인덱스가 생성된 단어나 문구 조회하기
+```sql
+SET GLOBAL innodb_ft_aux_table = 'DB명/테이블명'; -- 모두 소문자로
+
+/*
+- word : 인덱스가 생성된 단어나 문구
+- doc_count : 해당 word가 나온 행의 개수
+*/
+SELECT word, doc_count, doc_id, position FROM INFORMATION_SCHEMA.INNODB_FT_INDEX_TABLE;
+```
+
+### 중지 단어
+전체 텍스트 인덱스는 긴 문장에 인덱스를 생성하기 때문에 인덱스의 양이 많이 질 수 밖에 없다. 그래서 '이번', '아주', '모두', '꼭' 등과 같은 단어는 제외시키는 것이 좋은데, 이 단어들을 중지 단어라고 한다.
+
+MySQL은 `INFORMATION_SCHEMA.INNODB_FT_DEFAULT_STOPWORD`에 중지 단어를 저장하고 있으며, 필요시 별도의 테이블에 중지 단어를 추가하여 적용할 수 있다. 그리고 전체 텍스트 인덱스를 만들때 중지 단어들을 제외하고 만들어준다.
+
+중지 단어 추가하기
+```sql
+/*
+1. 중지 단어를 저장할 테이블을 만든다.
+- 테이블명은 아무거나 상관없지만, 열이름은 value, 데이터형은 varchar로 만들어야한다.
+*/
+CREATE TABLE stopword (
+	values varchar(30)
+);
+
+-- 2. 중지 단어를 저장한다.
+INSERT INTO stopword VALUES ('그리고'), ('그래서'), ('하지만'); 
+
+-- 3. 중지 단어 테이블을 시스템 변수 innodb_ft_server_stopword_table에 설정한다.(DB명과 테이블명은 모두 소문자로)
+SET GLOBAL innodb_ft_server_stopword_table='mydb/stopword';
+
+-- 'innodb_ft_server_stopword_table' 변수 조회 -> 결과 : mydb/stopword
+SHOW GLOBAL VARIABLES LIKE 'innodb_ft_server_stopword_table';
+```
+
+## 전체 택스트 검색 쿼리
+전체 텍스트 인덱스를 이용하기 위한 쿼리는 일반 SELECT문의 WHERE절에 `MATCH() AGAINST()`을 사용하면 된다.
+```sql
+-- 전체 텍스트 검색 쿼리 문법
+MATCH(col1, col2, ...) AGAINST (expr [search_modifier]);
+
+search_modifier:
+{
+	  IN NATURAL LANGUAGE MODE
+	| IN NATURAL LANGUAGE MODE WITH QUERY EXPANSION
+	| IN BOOLEAN MODE
+	| WITH QUERY EXPANSION
+}
+```
+### 자연어 검색
+- IN NATURAL LANGUAGE MODE(디폴트 값)
+- 자연어 검색은 **단어가 정확한 것**을 검색해준다.
+```sql
+-- '자바'라는 단어가 포함된 article을 조회한다.
+-- '프로그래밍이', '프로그래밍은' 등은 조회되지 않는다.
+SELECT * FROM newspaper WHERE MATCH(article) AGAINST('프로그래밍');
+
+-- '프로그래밍' 또는 '자바'라는 단어가 포함된 article을 조회한다.
+SELECT * FROM newspaper WHERE MATCH(article) AGAINST('프로그래밍 자바');
+```
+
+### 불린 모드 검색
+- IN BOOLEAN MODE
+- 불린 모드 검색은 **단어나 문장이 정확히 일치하지 않는 것도** 검색하는 것을 말한다.
+- 연산자 지원
+  - \+ : 필수
+  - \- : 제외
+  - \* : 부분 검색
+
+```sql
+-- '자바는', '자바가' 등 '자바'가 앞에 들어간 것을 포함한 것을 조회한다.
+SELECT * FROM newspaper WHERE MATCH(article) AGAINST('자바*' IN BOOLEAN MODE);
+
+-- '자바 프로그래밍'을 정확히 포함한 것을 조회한다.
+SELECT * FROM newspaper WHERE MATCH(article) AGAINST('자바 프로그래밍' IN BOOLEAN MODE);
+
+-- '자바 프로그래밍'이 들어간 것 중에 '클래스'를 필수로 포함한 것을 조회한다.
+SELECT * FROM newspaper WHERE MATCH(article) AGAINST('자바 프로그래밍 +클래스' IN BOOLEAN MODE);
+
+-- '자바 프로그래밍'이 들어간 것 중에 '클래스'가 제외된 것을 조회한다.
+SELECT * FROM newspaper WHERE MATCH(article) AGAINST('자바 프로그래밍 -클래스' IN BOOLEAN MODE);
+```
+
+참고 : MySQL은 기본적으로 3글자 이상만 전체 텍스트 인덱스로 생성하는데, 'innodb_ft_min_token_size'시스템 변수 값을 수정하여 2글자까지 전체 텍스트 인덱스가 생성되도록 변경할 수 있다.
+ - 설정 방법 : MySQL의 환경 설정 파일인 my.ini 파일의 [mysqld] 아래 쪽 아무 곳에 'innodb_ft_min_token_size=2'를 추가하고 MySQL 서비스를 재시작한다.
