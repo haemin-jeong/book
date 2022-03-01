@@ -54,3 +54,13 @@ th:utext = <span th:utext="${data}"></span>
     <p>My name is <span th:text=${first.username}></span></p>
 </div>
 ```
+
+## 기본 객체들
+타임리프는 편의를 위해 기본적인 객체들을 제공한다.
+- ${#request} : request 객체
+- ${#reponse} : response 객체
+- ${#session} : session 객체(사용 예: session.data)
+- #{#servletContext}
+- #{#locale}
+- ${param} : HTTP 요청 파라미터 접근(사용 예: url: ...?key=a -> ${param.key})
+- #{@beanName.methodName()} : 스프링 빈에 접근(사용 예: helloBean.hello(String data) -> #{@helloBean.hello('Spring')})
