@@ -82,3 +82,50 @@ th:utext = <span th:utext="${data}"></span>
 - #arrays : 배열 관련 기능 제공
 - #lists, #sets, #maps : 컬렉션 관련 기능 제공
 - #ids : 아이디 처리 관련 기능 제공
+
+## URL 링크
+타임리프에서 URL을 사용할 때는 @{...} 을 사용한다.
+
+절대 경로, 상대 경로 모두 사용할 수 있다.
+
+- 단순 경로 : @{/exam/hello/1}
+- 경로 변수 사용 : @{/exam/{var1}/{var2}(var1='data1', var2='data2')} -> /exam/data1/data2
+- 쿼리 파라미터 사용 : @{/exam(param1='data1', param2='data2')} -> /exam?param1=data1&param2=data2
+- 경로 변수 + 쿼리 파라미터 : @{/exam/{param1}(param1='data1', param2='data2')} -> /exam/data1?param2=data2
+
+## 문자 리터럴
+타임리프에서 문자 리터럴은 항상 ' 으로 감싸줘야하며 공백 없이 이어지는 문자열의 경우엔 생략이 가능하다.
+
+예시
+- th:text="hello world" -> X  
+- th:text="'hello'" -> O
+- th:text="'hello world'" -> O
+- th:text="hello" -> O
+
+문자열에 변수 출력하기
+- 일반적인 방법 : th:text="'hello ' + ${data}"
+- 리터럴 대체 : th:text="|hello ${data}|"
+
+## 속성 값 설정
+### 속성 설정
+`th:속성명` 로 속성 값을 지정하면, 기존에 해당 속성명이 HTML에 있는 경우 덮어씌워지고, 없는 경우 생성 된다.
+
+사용 예
+- 렌더링 전: `<input name="hello" th:name="hi"/>` -> 렌더링 후: `<input name="hi"/>`
+- 렌더링 전: `<input th:name="hi"/>` -> 렌더링 후: `<input name="hi"/>`
+
+### 기존 속성에 값 추가
+- th:attrappend="속성명=' 속성값'" : 해당 속성의 속성 값 뒤에 이어 붙힌다.(공백 주의, 공백이 없으면 기존 클래스명에 공백 없이 이어 붙혀진다)
+  - 렌더링 전: `<span class="c1" th:attrappend="class=' c2'"/>` -> 렌더링 후: `<span class="c1 c2">`
+- th:attrprepend="속성명='속성값 '" : 해당 속성의 값 앞에 이어 붙힌다.(공백 주의, 공백이 없으면 기존 클래스명에 공백 없이 이어 붙혀진다)
+  - - 렌더링 전: `<span class="c1" th:attrprepend="class='c2 '"/>` -> 렌더링 후: `<span class="c2 c1">`
+- th:classappend="클래스명" : class 속성에 값을 추가한다.
+
+### check 속성 처리
+HTML의 checkbox에서 check 여부는 단순히 checked 옵션 유무로 판단한다.
+- check : `<input type="checkbox" checked/>`
+- uncheck : `<input type="checkbox"/>`
+
+타임리프에서 checkbox check여부를 boolean 값을 사용해서 판단한다.
+- check : `<input type="checkbox" th:checked="true">` -> `<input type="checkbox" checked/>`
+- uncheck : `<input type="checkbox" th:checked="false">` -> `<input type="checkbox"/>`
