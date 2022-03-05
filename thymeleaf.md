@@ -129,3 +129,100 @@ HTML의 checkbox에서 check 여부는 단순히 checked 옵션 유무로 판단
 타임리프에서 checkbox check여부를 boolean 값을 사용해서 판단한다.
 - check : `<input type="checkbox" th:checked="true">` -> `<input type="checkbox" checked/>`
 - uncheck : `<input type="checkbox" th:checked="false">` -> `<input type="checkbox"/>`
+
+## 반복
+타임리프에서 `th:each`를 사용해서 List와 같은 컬렉션에 있는 값을 하나씩 꺼내서 사용할 수 있다.
+
+List, Set, 배열 등 Iterable, Enumeration을 구현한 모든 객체를 반복에 사용할 수 있다.
+
+Map의 경우에는 [Map.Entry](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/Map.Entry.html)가 반복 객체에 사용된다.
+
+문법 : `th:each="변수명 : ${컬렉션명}"`
+
+### 예제 코드
+Controller
+```java
+@Controller
+public class MenuController {
+
+    @GetMapping("/menu")
+    public String menu(Model model) {
+        List<Menu> list = new ArrayList<>();
+
+        list.add(new Menu("불고기", 8000));
+        list.add(new Menu("삽겹살", 12000));
+        list.add(new Menu("목살", 10000));
+
+        model.addAttribute("menus", list);
+
+        return "basic/menu";
+    }
+
+    static class Menu {
+        String name;
+        int price;
+
+        public Menu(String name, int price) {
+            this.name = name;
+            this.price = price;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public int getPrice() {
+            return price;
+        }
+    }
+}
+
+```
+HTML
+```html
+<table>
+  <tr>
+    <th>메뉴</th>
+    <th>가격</th>
+  </tr>
+  <tr th:each="menu : ${menus}">
+    <td th:text="${menu.name}"></td>
+    <td th:text="${menu.price}"></td>
+  </tr>
+</table>
+```
+실행 결과
+|메뉴|가격|
+|---|---|
+|불고기|8000|
+|삼겹살|12000|
+|목살|10000|
+
+### 편의 기능 - 상태 정보
+`th:each`에서 두번째 파라미터를 설정해서 index, size 등과 같은 반복의 상태 정보를 사용할 수 있다.
+
+두번째 파라미터는 생략이 가능하며, 생략 가능 조건은 사용 시에 '변수명 + Stat' 이름으로 상태 정보에 접근하는 경우이다.
+
+상태 정보
+- index : 0부터 시작하는 인덱스
+- count : 1부터 시작하는 값
+- size
+- even, odd : 짝수, 홀수 번째 여부(1부터 카운팅), 결과는 boolean 값
+- first, last : 첫번째, 마지막 여부, 결과는 booelan 값
+- currnet : 컬렉션의 요소 중 현재 객체
+
+예시
+```html
+<!-- menuStat이 '변수명 + Stat' 형태이기 때문에 menuStat 생략 가능-->
+<tr th:each="menu menuStat : ${menus}">
+    <td th:text=${menuStat.index}></td> -- index 출력
+    <td th:text="${menu.name}"></td>
+    <td th:text="${menu.price}"></td>
+  </tr>
+```
+실행 결과
+|번호|메뉴|가격|
+|---|---|---|
+|0|불고기|8000|
+|1|삼겹살|12000|
+|2|목살|10000|
