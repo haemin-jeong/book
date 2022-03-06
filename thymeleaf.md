@@ -211,7 +211,7 @@ HTML
 - first, last : 첫번째, 마지막 여부, 결과는 booelan 값
 - currnet : 컬렉션의 요소 중 현재 객체
 
-예시
+예제
 ```html
 <!-- menuStat이 '변수명 + Stat' 형태이기 때문에 menuStat 생략 가능-->
 <tr th:each="menu menuStat : ${menus}">
@@ -226,3 +226,86 @@ HTML
 |0|불고기|8000|
 |1|삼겹살|12000|
 |2|목살|10000|
+
+## 조건식
+타임리프에서도 일반적인 프로그래밍 언어에 있는 조건문 if, switch문을 사용할 수 있다. 이외에 unlesss가 있는데 이것은 if의 반대 즉, 조건이 false이면 실행 된다.
+
+조건이 맞지 않으면 조건식이 선언된 태그 자체를 렌더링하지 않는다.
+
+예제
+```html
+<!-- if문 -->
+<!-- user.age가 20 보다 작으면 렌더링 -->
+<span th:text="'미성년자'" th:if="${user.age lt 20}"></span>
+<span th:text="'미성년자'" th:unless="${user.age ge 20}"></span>
+
+<!-- switch문 -->
+<!-- *은 만족하는 조건이 없을 때를 뜻한다(default). -->
+<div th:switch="${user.age}">
+  <span th:case="10">10살</span>
+  <span th:case="20">20살</span>
+  <span th:case="*">기타</span>
+</div>
+```
+
+## 주석
+
+### HTML 주석
+표준 HTML 주석으로 항상 주석으로 사용된다.
+```html
+<!-- This is html comments -->
+```
+### 타임리프 파서(hymeleaf parser-level) 주석
+정적으로 HTML 파일로 열면 주석으로 남아있고, 타임리프를 통한 렌더링 시에 제거된다.
+```html
+<!--/* This is thymeleaf parse single line comments */-->
+```
+아래 형태의 주석은 정적으로 HTML 파일로 열면 코드로 존재하고, 타임리프를 통한 렌더링 시에 제거된다.
+```html
+<!--/*-->
+<p>This is thymeleaf parse comments</p>
+<!--*/-->
+```
+
+### 타임리프 프로토타입(Thymeleaf prototype-only) 주석
+정적으로 HTML 파일로 열면 주석으로 존재하고, 타임리프를 통한 렌더링 시엔 주석이 아닌 코드로 렌더링 된다.
+```html
+<!--/*/ <h2>This is thymeleaf prototype comments</h2> /*/-->
+```
+
+## 블록(block)
+`th:block`은 HTML 태그가 아닌 타임리프 자체 태그로써, 원하는 속성을 지정할 수 있는 단순 속성 컨테이너이다. `<th:block>`은 렌더링 시에 제거된다.
+
+예를 들어 각 요소에 대해 둘 이상의 <tr>이 필요한 반복 테이블을 생성할 때 유용할 수 있다.
+```html
+<!-- 렌더링 전 -->
+<table>
+  <th:block th:each="user : ${users}">
+    <tr>
+      <td th:text="${user.name}"></td>
+      <td th:text="${user.age}"></td>
+    </tr>
+    <tr>
+        <td colspan="2" th:text="${user.address}">...</td>
+    </tr>
+  </th:block>
+</table>
+
+<!-- 렌더링 후 예시 -->
+<table>
+  <tr>
+    <td>김김김</td>
+    <td>20</td>
+  </tr>
+  <tr>
+    <td colspan="2">경기도 성남시</td>
+  </tr>
+  <tr>
+    <td>박박박</td>
+    <td>30</td>
+  </tr>
+  <tr>
+    <td colspan="2">서울특별시</td>
+  </tr>
+</table>
+```
